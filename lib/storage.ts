@@ -1,0 +1,53 @@
+import { mkdir, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+
+const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const ALLOWED_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml",
+  "image/avif",
+]);
+
+const EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/svg+xml": "svg",
+  "image/avif": "avif",
+};
+
+export async function saveUpload(file: File): Promise<string> {
+  if (!ALLOWED_TYPES.has(file.type)) {
+    throw new Error(`Unsupported file type: ${file.type}`);
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error("File is too large (max 10MB)");
+  }
+
+  const ext = EXTENSIONS[file.type] ?? "bin";
+  const filename = `${Date.now()}-${randomUUID()}.${ext}`;
+
+  await mkdir(UPLOADS_DIR, { recursive: true });
+  await writeFile(path.join(UPLOADS_DIR, filename), Buffer.from(await file.arrayBuffer()));
+
+  return `/uploads/${filename}`;
+}
+
+export async function deleteUploadFile(url: string): Promise<void> {
+  if (!url.startsWith("/uploads/")) return;
+  const filename = url.replace("/uploads/", "");
+  if (filename.includes("/") || filename.includes("..")) return;
+
+  try {
+    await unlink(path.join(UPLOADS_DIR, filename));
+  } catch {
+    // File already gone; nothing to do.
+  }
+}
