@@ -65,3 +65,6 @@ Desktop.ini
 
 # Vercel
 .vercel
+
+# Scripts (may contain secrets like tokens)
+scripts/
