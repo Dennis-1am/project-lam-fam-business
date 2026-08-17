@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function LoginForm() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -17,8 +15,8 @@ export function LoginForm() {
     const res = await fetch("/api/auth/login", { method: "POST", body: formData });
 
     if (res.ok) {
-      router.push("/admin");
-      router.refresh();
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.href = "/admin";
     } else {
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       setError(data.error ?? "Login failed.");

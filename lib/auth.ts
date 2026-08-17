@@ -5,10 +5,18 @@ import { redirect } from "next/navigation";
 const COOKIE_NAME = "admin_session";
 const SESSION_DAYS = 7;
 
+function getSecret(): string {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error(
+      "AUTH_SECRET is not set. Generate one with: openssl rand -hex 32",
+    );
+  }
+  return secret;
+}
+
 function sign(value: string): string {
-  return createHmac("sha256", process.env.AUTH_SECRET ?? "")
-    .update(value)
-    .digest("hex");
+  return createHmac("sha256", getSecret()).update(value).digest("hex");
 }
 
 function createSessionToken(): string {

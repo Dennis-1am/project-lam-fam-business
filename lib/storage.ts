@@ -10,7 +10,6 @@ const ALLOWED_TYPES = new Set([
   "image/png",
   "image/webp",
   "image/gif",
-  "image/svg+xml",
   "image/avif",
 ]);
 
@@ -19,7 +18,6 @@ const EXTENSIONS: Record<string, string> = {
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
-  "image/svg+xml": "svg",
   "image/avif": "avif",
 };
 

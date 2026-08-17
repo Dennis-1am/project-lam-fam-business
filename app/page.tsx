@@ -6,6 +6,8 @@ export const metadata = {
   title: "Catalog",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function CatalogPage() {
   const products = await db.product.findMany({
     include: { images: { orderBy: { position: "asc" } } },

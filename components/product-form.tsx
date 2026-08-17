@@ -94,7 +94,7 @@ export function ProductForm({
 
       <div>
         <label htmlFor="price" className="mb-1 block text-sm font-medium text-neutral-700">
-          Price
+          $ Price
         </label>
         <div className="flex items-center">
           <span className="mr-2 text-neutral-500">$</span>
