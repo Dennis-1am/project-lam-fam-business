@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "@/lib/language-context";
 
 export function LoginForm() {
+  const t = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -31,7 +33,7 @@ export function LoginForm() {
           htmlFor="username"
           className="mb-1 block text-sm font-medium text-neutral-700"
         >
-          Username
+          {t("username")}
         </label>
         <input
           id="username"
@@ -47,7 +49,7 @@ export function LoginForm() {
           htmlFor="password"
           className="mb-1 block text-sm font-medium text-neutral-700"
         >
-          Password
+          {t("password")}
         </label>
         <input
           id="password"
@@ -66,7 +68,7 @@ export function LoginForm() {
         disabled={pending}
         className="w-full rounded-lg bg-neutral-900 px-4 py-2 text-white transition hover:bg-neutral-700 disabled:opacity-50"
       >
-        {pending ? "Signing in..." : "Sign in"}
+        {pending ? t("signingIn") : t("signIn")}
       </button>
     </form>
   );

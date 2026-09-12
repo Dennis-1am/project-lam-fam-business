@@ -1,13 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/lib/language-context";
 
-export function LogoutButton() {
+export function LogoutButton({ onLoggedOut }: { onLoggedOut?: () => void }) {
   const router = useRouter();
+  const t = useTranslation();
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/admin/login");
+    onLoggedOut?.();
+    router.push("/");
     router.refresh();
   }
 
@@ -17,7 +20,7 @@ export function LogoutButton() {
       onClick={handleLogout}
       className="text-sm text-neutral-500 hover:text-neutral-900"
     >
-      Sign out
+      {t("signOut")}
     </button>
   );
 }

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ImageEditor } from "@/components/image-editor";
 import { cropBoxStyle, cropFromRecord, cropSourceSizes } from "@/lib/crop";
 import type { CropData, CroppableImage } from "@/lib/crop";
+import { useTranslation } from "@/lib/language-context";
 
 type ProductFormProps = {
   action: (formData: FormData) => void | Promise<void>;
@@ -26,6 +27,7 @@ export function ProductForm({
   initial,
   productId,
 }: ProductFormProps) {
+  const t = useTranslation();
   const [images, setImages] = useState<PendingImage[]>(
     initial?.images.map((img) => ({
       url: img.url,
@@ -80,7 +82,7 @@ export function ProductForm({
 
       <div>
         <label htmlFor="title" className="mb-1 block text-sm font-medium text-neutral-700">
-          Title
+          {t("title")}
         </label>
         <input
           id="title"
@@ -94,10 +96,10 @@ export function ProductForm({
 
       <div>
         <label htmlFor="price" className="mb-1 block text-sm font-medium text-neutral-700">
-          $ Price
+          {t("price")}
         </label>
-        <div className="flex items-center">
-          <span className="mr-2 text-neutral-500">$</span>
+        <div className="flex max-w-48 items-center rounded-lg border border-neutral-300 focus-within:border-neutral-900">
+          <span className="pl-3 text-neutral-500">$</span>
           <input
             id="price"
             name="price"
@@ -106,14 +108,14 @@ export function ProductForm({
             step="0.01"
             required
             defaultValue={initial?.price}
-            className="w-full max-w-48 rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-900 focus:outline-none"
+            className="w-full bg-transparent py-2 pr-3 focus:outline-none"
           />
         </div>
       </div>
 
       <div>
         <label htmlFor="description" className="mb-1 block text-sm font-medium text-neutral-700">
-          Description
+          {t("description")}
         </label>
         <textarea
           id="description"
@@ -125,9 +127,9 @@ export function ProductForm({
       </div>
 
       <div>
-        <span className="mb-1 block text-sm font-medium text-neutral-700">Images</span>
+        <span className="mb-1 block text-sm font-medium text-neutral-700">{t("images")}</span>
         <p className="mb-2 text-xs text-neutral-500">
-          Tap an image to crop it. Only the original file is kept; the crop is applied when viewed.
+          {t("cropImageHint")}
         </p>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {images.map((image, index) => (
@@ -137,7 +139,7 @@ export function ProductForm({
             >
               <button
                 type="button"
-                aria-label="Crop image"
+                aria-label={t("cropImageHint")}
                 onClick={() => setEditorIndex(index)}
                 className="absolute inset-0 h-full w-full cursor-pointer"
               >
@@ -165,7 +167,7 @@ export function ProductForm({
               </button>
               {image.crop && (
                 <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
-                  Cropped
+                  {t("cropped")}
                 </span>
               )}
               <button
@@ -186,11 +188,11 @@ export function ProductForm({
 
           <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-neutral-300 text-sm text-neutral-400 transition hover:border-neutral-900 hover:text-neutral-700">
             {uploading ? (
-              <span>Uploading&hellip;</span>
+              <span>{t("uploading")}</span>
             ) : (
               <>
                 <span className="text-2xl leading-none">+</span>
-                <span>Add image</span>
+                <span>{t("addImage")}</span>
               </>
             )}
             <input

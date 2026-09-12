@@ -3,6 +3,7 @@
 import Cropper from "react-easy-crop";
 import { useCallback, useState } from "react";
 import type { CropData } from "@/lib/crop";
+import { useTranslation } from "@/lib/language-context";
 
 type ImageEditorProps = {
   imageUrl: string;
@@ -12,6 +13,7 @@ type ImageEditorProps = {
 };
 
 export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEditorProps) {
+  const t = useTranslation();
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [lastArea, setLastArea] = useState<CropData | null>(null);
@@ -44,7 +46,7 @@ export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEdito
       </div>
       <div className="mx-auto w-full max-w-2xl px-4 pb-8">
         <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-400">
-          Zoom
+          {t("zoom")}
         </label>
         <input
           type="range"
@@ -61,7 +63,7 @@ export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEdito
             onClick={onCancel}
             className="flex-1 rounded-full border border-neutral-500 px-4 py-2.5 text-sm font-medium text-neutral-200 transition-colors hover:bg-neutral-800"
           >
-            Cancel
+            {t("cancel")}
           </button>
           <button
             type="button"
@@ -69,7 +71,7 @@ export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEdito
             disabled={!lastArea}
             className="flex-1 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Apply
+            {t("apply")}
           </button>
         </div>
       </div>
