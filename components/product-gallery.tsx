@@ -4,10 +4,12 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { cropBoxStyle, cropFromRecord, cropSourceSizes } from "@/lib/crop";
 import type { CroppableImage } from "@/lib/crop";
+import { useTranslation } from "@/lib/language-context";
 
 type GalleryImage = CroppableImage & { id: string };
 
 export function ProductGallery({ images }: { images: GalleryImage[] }) {
+  const t = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
 
@@ -51,13 +53,13 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
   if (images.length === 0) {
     return (
       <div className="flex aspect-square items-center justify-center rounded-xl border border-neutral-200 bg-neutral-100 text-neutral-400">
-        No image
+        {t("noImage")}
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="min-w-0">
       <div
         ref={containerRef}
         className="flex snap-x snap-mandatory flex-row gap-4 overflow-x-auto overflow-y-hidden sm:h-[80vh] sm:flex-col sm:overflow-y-auto sm:overflow-x-hidden rounded-xl"
@@ -75,7 +77,7 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
                   <div style={cropBoxStyle(crop)} className="absolute">
                     <Image
                       src={image.url}
-                      alt={`Product image ${index + 1}`}
+                      alt={`${t("productImage")} ${index + 1}`}
                       fill
                       priority={index === 0}
                       sizes={cropSourceSizes(crop, 100, 50)}
@@ -86,7 +88,7 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
               ) : (
                 <Image
                   src={image.url}
-                  alt={`Product image ${index + 1}`}
+                  alt={`${t("productImage")} ${index + 1}`}
                   fill
                   priority={index === 0}
                   sizes="(min-width: 768px) 50vw, 100vw"
@@ -99,7 +101,7 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
       </div>
 
       {images.length > 1 && (
-        <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+        <div className="mt-3 flex gap-3 overflow-x-auto pb-1 pr-4">
           {images.map((image, index) => {
             const crop = cropFromRecord(image);
             return (
@@ -107,7 +109,7 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
                 key={image.id}
                 type="button"
                 onClick={() => jumpTo(index)}
-                aria-label={`Jump to image ${index + 1}`}
+                aria-label={`${t("jumpToImage")} ${index + 1}`}
                 className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border transition ${
                   index === active
                     ? "border-neutral-900"
