@@ -44,9 +44,6 @@ prisma/dev.db*
 prisma/migrations/
 public/uploads/
 
-# vercel
-.vercel
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
@@ -62,9 +59,6 @@ next-env.d.ts
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-
-# Vercel
-.vercel
 
 # Scripts (may contain secrets like tokens)
 scripts/
