@@ -1,28 +1,80 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { updateProduct } from "@/app/actions";
 import { ProductForm } from "@/components/product-form";
+import { useTranslation } from "@/lib/language-context";
 
-export const metadata = {
-  title: "Edit product",
+type Product = {
+  id: string;
+  title: string;
+  priceCents: number;
+  description: string | null;
+  images: Array<{
+    id: string;
+    url: string;
+    cropX: number | null;
+    cropY: number | null;
+    cropWidth: number | null;
+    cropHeight: number | null;
+    position: number;
+  }>;
 };
 
-export default async function EditProductPage({
+export default function EditProductPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
-  const { id } = await params;
+  const t = useTranslation();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFoundError, setNotFoundError] = useState(false);
 
-  const product = await db.product.findUnique({
-    where: { id },
-    include: { images: { orderBy: { position: "asc" } } },
-  });
+  useEffect(() => {
+    params.then(({ id }) => {
+      fetch(`/api/products/${id}`)
+        .then((res) => {
+          if (!res.ok) {
+            setNotFoundError(true);
+            setLoading(false);
+            return;
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (data) {
+            setProduct(data);
+          }
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    });
+  }, [params]);
 
-  if (!product) {
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        <nav className="mb-6 text-sm text-neutral-500">
+          <Link href="/admin" className="hover:text-neutral-900">
+            {t("products")}
+          </Link>
+          <span className="mx-2">/</span>
+          <span className="text-neutral-900">Loading...</span>
+        </nav>
+        <h1 className="mb-8 text-2xl font-bold tracking-tight">
+          {t("editProduct")}: Loading...
+        </h1>
+        <div className="rounded-xl border border-dashed border-neutral-300 py-24 text-center text-neutral-400">
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  if (notFoundError || !product) {
     notFound();
   }
 
@@ -30,23 +82,23 @@ export default async function EditProductPage({
     <div className="mx-auto max-w-6xl px-4 py-8">
       <nav className="mb-6 text-sm text-neutral-500">
         <Link href="/admin" className="hover:text-neutral-900">
-          Products
+          {t("products")}
         </Link>
         <span className="mx-2">/</span>
         <span className="text-neutral-900">{product.title}</span>
       </nav>
 
       <h1 className="mb-8 text-2xl font-bold tracking-tight">
-        Edit: {product.title}
+        {t("editProduct")}: {product.title}
       </h1>
       <ProductForm
         action={updateProduct}
-        submitLabel="Save changes"
+        submitLabel={t("saveChanges")}
         productId={product.id}
         initial={{
           title: product.title,
           price: (product.priceCents / 100).toFixed(2),
-          description: product.description,
+          description: product.description ?? "",
           images: product.images.map((img) => ({
             url: img.url,
             cropX: img.cropX,
