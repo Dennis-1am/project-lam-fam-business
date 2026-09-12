@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
-import { siteConfig } from "@/lib/site";
 import { ProductCard } from "@/components/product-card";
+import Link from "next/link";
+import { cookies } from "next/headers";
 
 export const metadata = {
   title: "Catalog",
@@ -8,35 +9,110 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function CatalogPage() {
-  const products = await db.product.findMany({
-    include: { images: { orderBy: { position: "asc" } } },
-    orderBy: { createdAt: "desc" },
-  });
+const PAGE_SIZE = 24;
+
+export default async function CatalogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const requestedPage = Number(pageParam);
+  const page =
+    Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const skip = (page - 1) * PAGE_SIZE;
+
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("admin_session")?.value;
+  const isAdmin = !!sessionCookie;
+
+  const [productsWithExtra, total] = await Promise.all([
+    db.product.findMany({
+      include: { images: { orderBy: { position: "asc" }, take: 1 } },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: PAGE_SIZE + 1,
+    }),
+    db.product.count(),
+  ]);
+
+  const hasMore = productsWithExtra.length > PAGE_SIZE;
+  const products = productsWithExtra.slice(0, PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">{siteConfig.name}</h1>
-        <p className="mt-1 text-neutral-500">{siteConfig.tagline}</p>
-      </div>
+      <section className="pb-10 pt-6">
+        <p className="text-sm font-medium uppercase tracking-widest text-neutral-400">
+          Family wholesale · Since 2010
+        </p>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight">
+          Welcome to our shop
+        </h1>
+        {total > 0 && (
+          <p className="mt-2 text-neutral-500">
+            {total} {total === 1 ? "product" : "products"}
+          </p>
+        )}
+      </section>
 
-      {products.length === 0 ? (
+      <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {isAdmin && page === 1 && (
+          <Link
+            href="/admin/new"
+            className="group block"
+            aria-label="Add product"
+          >
+            <div className="relative aspect-square rounded-xl border border-dashed border-neutral-300 bg-neutral-50 flex flex-col items-center justify-center gap-2 text-neutral-400 transition group-hover:border-neutral-400 group-hover:text-neutral-700">
+              <span className="text-4xl leading-none">+</span>
+              <span className="text-sm font-medium">Add product</span>
+            </div>
+          </Link>
+        )}
+        {products.map((product, index) => (
+          <ProductCard
+            key={product.id}
+            id={product.id}
+            title={product.title}
+            priceCents={product.priceCents}
+            images={product.images}
+            isAdmin={isAdmin}
+            priority={page === 1 && index === 0}
+          />
+        ))}
+      </div>
+      {products.length === 0 && (
         <div className="rounded-xl border border-dashed border-neutral-300 py-24 text-center text-neutral-400">
           No products yet. Check back soon!
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              id={product.id}
-              title={product.title}
-              priceCents={product.priceCents}
-              images={product.images}
-            />
-          ))}
-        </div>
+      )}
+
+      {totalPages > 1 && (
+        <nav className="mt-12 flex items-center justify-center gap-4 text-sm">
+          {page > 1 ? (
+            <Link
+              href={page === 2 ? "/" : `/?page=${page - 1}`}
+              className="rounded-lg border border-neutral-300 px-4 py-2 transition hover:border-neutral-900"
+            >
+              Previous
+            </Link>
+          ) : (
+            <span className="px-4 py-2 text-neutral-300">Previous</span>
+          )}
+          <span className="text-neutral-500">
+            Page {page} of {totalPages}
+          </span>
+          {hasMore ? (
+            <Link
+              href={`/?page=${page + 1}`}
+              className="rounded-lg border border-neutral-300 px-4 py-2 transition hover:border-neutral-900"
+            >
+              Next
+            </Link>
+          ) : (
+            <span className="px-4 py-2 text-neutral-300">Next</span>
+          )}
+        </nav>
       )}
     </div>
   );
