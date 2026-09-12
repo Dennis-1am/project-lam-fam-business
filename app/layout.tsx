@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
 import "./globals.css";
+import Link from "next/link";
+import { Providers } from "@/components/providers";
+import { Header } from "@/components/header";
+import { SignInOut } from "@/components/sign-in-out";
 import { siteConfig } from "@/lib/site";
 
 const geistSans = Geist({
@@ -16,10 +19,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: siteConfig.name,
-    template: `%s · ${siteConfig.name}`,
+    default: "Lam Life Shop",
+    template: `%s · Lam Life Shop`,
   },
-  description: siteConfig.tagline,
+  description: "Established Since: 2010",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -29,25 +32,31 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <header className="border-b border-neutral-200">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-            <Link href="/" className="text-xl font-bold tracking-tight">
-              {siteConfig.name}
-            </Link>
-            <nav className="flex items-center gap-4 text-sm text-neutral-500">
-              <Link href="/" className="hover:text-neutral-900">
-                Catalog
-              </Link>
-              <Link href="/admin" className="hover:text-neutral-900">
-                Admin
-              </Link>
-            </nav>
-          </div>
-        </header>
-        <main className="flex-1">{children}</main>
-        <footer className="border-t border-neutral-200 py-6 text-center text-sm text-neutral-400">
-          {siteConfig.tagline}
-        </footer>
+        <Providers>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <footer className="border-t border-neutral-200">
+            <div className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
+              <div className="flex flex-col items-center pb-5 sm:flex-row sm:justify-between sm:pb-8">
+                <p className="pb-4 text-center font-bold sm:pb-0 sm:text-left">
+                  {siteConfig.name}
+                </p>
+                <nav className="flex items-center text-sm text-neutral-500">
+                  <Link
+                    href="/"
+                    className="mr-6 transition-colors hover:text-neutral-900"
+                  >
+                    Catalog
+                  </Link>
+                  <SignInOut />
+                </nav>
+              </div>
+              <div className="border-t border-neutral-200 pt-4 text-center text-xs text-neutral-400 sm:pt-6">
+                © 2026 {siteConfig.name}
+              </div>
+            </div>
+          </footer>
+        </Providers>
       </body>
     </html>
   );
