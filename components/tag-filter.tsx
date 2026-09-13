@@ -9,9 +9,10 @@ type Tag = { id: string; name: string };
 type TagFilterProps = {
   activeTag: Tag | null;
   untagged: boolean;
+  isAdmin: boolean;
 };
 
-export function TagFilter({ activeTag, untagged }: TagFilterProps) {
+export function TagFilter({ activeTag, untagged, isAdmin }: TagFilterProps) {
   const t = useTranslation();
   const [open, setOpen] = useState(false);
   const [tags, setTags] = useState<Tag[] | null>(null);
@@ -91,20 +92,22 @@ export function TagFilter({ activeTag, untagged }: TagFilterProps) {
                 )}
               </Link>
 
-              <Link
-                href="/?untagged=1"
-                onClick={() => setOpen(false)}
-                className={`flex w-full items-center justify-between gap-3 whitespace-nowrap border-t border-neutral-100 px-3 py-2 text-left text-sm hover:bg-neutral-50 ${
-                  untagged ? "bg-neutral-50 font-medium" : ""
-                }`}
-              >
-                {t("noTag")}
-                {untagged && (
-                  <span aria-hidden className="text-neutral-400">
-                    ✓
-                  </span>
-                )}
-              </Link>
+              {isAdmin && (
+                <Link
+                  href="/?untagged=1"
+                  onClick={() => setOpen(false)}
+                  className={`flex w-full items-center justify-between gap-3 whitespace-nowrap border-t border-neutral-100 px-3 py-2 text-left text-sm hover:bg-neutral-50 ${
+                    untagged ? "bg-neutral-50 font-medium" : ""
+                  }`}
+                >
+                  {t("noTag")}
+                  {untagged && (
+                    <span aria-hidden className="text-neutral-400">
+                      ✓
+                    </span>
+                  )}
+                </Link>
+              )}
 
               {loadFailed && (
                 <p className="border-t border-neutral-100 px-3 py-3 text-xs text-red-600">

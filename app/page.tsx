@@ -4,8 +4,8 @@ import { Prisma } from "@prisma/client";
 import { ProductCard } from "@/components/product-card";
 import { AddProductTile } from "@/components/add-product-tile";
 import { TagFilter } from "@/components/tag-filter";
-import { EmptyCatalogMessage, NoFilterResultsMessage } from "@/components/no-products-message";
-import { cookies } from "next/headers";
+import { getSession } from "@/lib/auth";
+import { CatalogHealthMessage, EmptyCatalogMessage, NoFilterResultsMessage } from "@/components/no-products-message";
 
 export const metadata = {
   title: "Catalog",
@@ -24,12 +24,9 @@ export default async function CatalogPage({
     await searchParams;
   const rawPage = /^\d+$/.test(pageParam ?? "") ? Number(pageParam) : 1;
 
-  const untagged = untaggedParam === "1";
+  const isAdmin = await getSession();
+  const untagged = isAdmin && untaggedParam === "1";
   const tagId = !untagged && tagParam ? tagParam : null;
-
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("admin_session")?.value;
-  const isAdmin = !!sessionCookie;
 
   const where: Prisma.ProductWhereInput = untagged
     ? { tagId: null }
@@ -37,7 +34,10 @@ export default async function CatalogPage({
       ? { tagId }
       : {};
 
-  const total = await db.product.count({ where });
+  const [total, catalogTotal] = await Promise.all([
+    db.product.count({ where }),
+    db.product.count(),
+  ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.max(1, Math.min(rawPage, totalPages));
   const skip = (page - 1) * PAGE_SIZE;
@@ -59,6 +59,7 @@ export default async function CatalogPage({
 
   const hasMore = productsWithExtra.length > PAGE_SIZE;
   const products = productsWithExtra.slice(0, PAGE_SIZE);
+  const showHealth = isAdmin && untagged && total === 0 && catalogTotal > 0;
 
   function hrefFor(pageNum: number) {
     const search = new URLSearchParams();
@@ -85,7 +86,11 @@ export default async function CatalogPage({
         )}
       </section>
 
-      <TagFilter activeTag={tagId ? activeTag : null} untagged={untagged} />
+      <TagFilter
+        activeTag={tagId ? activeTag : null}
+        untagged={untagged}
+        isAdmin={isAdmin}
+      />
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {isAdmin && page === 1 && <AddProductTile />}
@@ -102,8 +107,9 @@ export default async function CatalogPage({
           />
         ))}
       </div>
-      {total === 0 && <EmptyCatalogMessage />}
-      {total > 0 && products.length === 0 && <NoFilterResultsMessage />}
+      {showHealth && <CatalogHealthMessage />}
+      {!showHealth && total === 0 && <EmptyCatalogMessage />}
+      {!showHealth && total > 0 && products.length === 0 && <NoFilterResultsMessage />}
 
       {totalPages > 1 && (
         <nav className="mt-12 flex items-center justify-center gap-4 text-sm">

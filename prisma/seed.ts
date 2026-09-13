@@ -8,6 +8,53 @@ const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
 
 const PRODUCT_COUNT = 75;
 const MAX_IMAGES_PER_PRODUCT = 5;
+const UNTAGGED_EVERY = 10;
+
+const TAGS = ["Tabletop", "Kitchenware", "Home Decor", "Textiles"];
+
+const TAG_BY_ITEM: Record<string, string> = {
+  Vase: "Home Decor",
+  "Serving Bowl": "Tabletop",
+  "Cutting Board": "Kitchenware",
+  Throw: "Textiles",
+  Tumblers: "Glass & Drinkware",
+  "Candle Set": "Home Decor",
+  Mug: "Tabletop",
+  "Table Runner": "Textiles",
+  "Storage Basket": "Storage",
+  Teapot: "Kitchenware",
+  "Dinner Plates": "Tabletop",
+  "Salad Bowl": "Tabletop",
+  Coasters: "Tabletop",
+  Pitcher: "Kitchenware",
+  "Fruit Bowl": "Tabletop",
+  "Utensil Set": "Kitchenware",
+  "Butter Dish": "Tabletop",
+  "Serving Platter": "Tabletop",
+  "Breakfast Set": "Tabletop",
+  Trivet: "Kitchenware",
+};
+
+function itemName(i: number): string {
+  return ITEMS[Math.floor(i / MATERIALS.length) % ITEMS.length];
+}
+
+function tagNameForIndex(i: number): string | null {
+  if (i % UNTAGGED_EVERY === 0) return null;
+  return TAG_BY_ITEM[itemName(i)] ?? null;
+}
+
+async function printTagSummary(prefix: string) {
+  const tagged = await prisma.tag.findMany({
+    orderBy: { name: "asc" },
+    select: { name: true, _count: { select: { products: true } } },
+  });
+  const untagged = await prisma.product.count({ where: { tagId: null } });
+  const distribution = tagged
+    .map((t) => `${t.name} (${t._count.products})`)
+    .join(", ");
+  console.log(`${prefix} ${distribution}${distribution ? ", " : ""}Untagged (${untagged})`);
+}
 
 const MATERIALS = [
   "Handmade Ceramic",
@@ -126,29 +173,65 @@ function sampleProducts() {
 }
 
 async function main() {
-  const productCount = await prisma.product.count();
-  if (productCount >= PRODUCT_COUNT) {
+  const tagIds: Record<string, string> = {};
+  for (const name of TAGS) {
+    const tag = await prisma.tag.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+    tagIds[name] = tag.id;
+  }
+  console.log(`Ensured ${TAGS.length} tags: ${TAGS.join(", ")}`);
+
+  const existingCount = await prisma.product.count();
+
+  const existing = await prisma.product.findMany({
+    orderBy: { createdAt: "asc" },
+    select: { id: true, tagId: true },
+  });
+  let assigned = 0;
+  for (let i = 0; i < existing.length; i++) {
+    if (existing[i].tagId !== null) continue;
+    const tagName = tagNameForIndex(i);
+    if (!tagName) continue;
+    await prisma.product.update({
+      where: { id: existing[i].id },
+      data: { tagId: tagIds[tagName] },
+    });
+    assigned++;
+  }
+  if (assigned > 0) {
+    console.log(`Assigned tags to ${assigned} previously-untagged products.`);
+  }
+
+  if (existingCount >= PRODUCT_COUNT) {
     console.log(
-      `Database already has ${productCount} products (>= ${PRODUCT_COUNT}). Skipping.`,
+      `Database already has ${existingCount} products (>= ${PRODUCT_COUNT}). Skipping new products.`,
     );
+    await printTagSummary("Tag distribution:");
     return;
   }
 
   await mkdir(UPLOADS_DIR, { recursive: true });
 
   let imagesCreated = 0;
+  const samples = sampleProducts();
 
-  for (const sample of sampleProducts()) {
+  for (let i = existingCount; i < PRODUCT_COUNT; i++) {
+    const sample = samples[i];
     const slug = slugify(sample.title);
     const urls: string[] = [];
 
-    for (let i = 0; i < sample.imageCount; i++) {
-      const [from, to] = shade(sample.from, sample.to, i, sample.imageCount);
-      const file = `sample-${slug}-${i + 1}.svg`;
+    for (let j = 0; j < sample.imageCount; j++) {
+      const [from, to] = shade(sample.from, sample.to, j, sample.imageCount);
+      const file = `sample-${slug}-${j + 1}.svg`;
       const filePath = path.join(UPLOADS_DIR, file);
       await writeFile(filePath, svgPlaceholder(sample.title, sample.icon, from, to));
       urls.push(`/uploads/${file}`);
     }
+
+    const tagName = tagNameForIndex(i);
 
     await prisma.product.create({
       data: {
@@ -156,6 +239,7 @@ async function main() {
         description:
           `A sample listing for "${sample.title}". Swapped in by the seed script — replace the details and images with real inventory before going live.`,
         priceCents: 1500 + Math.floor(Math.random() * 8500),
+        tagId: tagName ? tagIds[tagName] : null,
         images: {
           create: urls.map((url, index) => ({ url, position: index })),
         },
@@ -165,9 +249,11 @@ async function main() {
     imagesCreated += urls.length;
   }
 
+  const created = PRODUCT_COUNT - existingCount;
   console.log(
-    `Seeded ${PRODUCT_COUNT} products with ${imagesCreated} images (up to ${MAX_IMAGES_PER_PRODUCT} per product).`,
+    `Seeded ${created} products with ${imagesCreated} images (up to ${MAX_IMAGES_PER_PRODUCT} per product). Every ${UNTAGGED_EVERY}th product is left untagged.`,
   );
+  await printTagSummary("Tag distribution:");
 }
 
 main()
