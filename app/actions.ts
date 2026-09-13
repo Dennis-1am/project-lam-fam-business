@@ -72,12 +72,23 @@ export async function createProduct(formData: FormData) {
   const priceCents = parsePrice(formData.get("price"));
   const description = String(formData.get("description") ?? "").trim();
   const images = parseImageEntries(formData);
+  const tagId = String(formData.get("tagId") ?? "").trim() || null;
+  if (tagId) {
+    const tag = await db.tag.findUnique({
+      where: { id: tagId },
+      select: { id: true },
+    });
+    if (!tag) {
+      throw new Error("Selected tag no longer exists.");
+    }
+  }
 
   const product = await db.product.create({
     data: {
       title,
       priceCents,
       description,
+      tagId,
       images: {
         create: images.map((img, position) => ({ ...img, position })),
       },

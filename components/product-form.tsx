@@ -7,6 +7,7 @@ import { cropBoxStyle, cropFromRecord, cropSourceSizes } from "@/lib/crop";
 import type { CropData, CroppableImage } from "@/lib/crop";
 import { useTranslation } from "@/lib/language-context";
 import { TagSelector } from "@/components/tag-selector";
+import { DeleteButton } from "@/components/delete-button";
 
 type ProductFormProps = {
   action: (formData: FormData) => void | Promise<void>;
@@ -129,13 +130,11 @@ export function ProductForm({
         />
       </div>
 
-      {productId && (
-        <TagSelector
-          productId={productId}
-          initialTagId={initial?.tagId ?? null}
-          initialTagName={initial?.tagName ?? null}
-        />
-      )}
+      <TagSelector
+        productId={productId}
+        initialTagId={initial?.tagId ?? null}
+        initialTagName={initial?.tagName ?? null}
+      />
 
       <div>
         <span className="mb-1 block text-sm font-medium text-neutral-700">{t("images")}</span>
@@ -181,14 +180,11 @@ export function ProductForm({
                   {t("cropped")}
                 </span>
               )}
-              <button
-                type="button"
+              <DeleteButton
+                className="absolute right-1 top-1 z-10"
                 aria-label="Remove image"
                 onClick={() => removeImage(image.url)}
-                className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-md bg-black/60 text-sm text-white hover:bg-black"
-              >
-                &times;
-              </button>
+              />
               <input type="hidden" name="imageUrls" value={image.url} />
               <input type="hidden" name="cropX" value={image.crop?.x ?? ""} />
               <input type="hidden" name="cropY" value={image.crop?.y ?? ""} />

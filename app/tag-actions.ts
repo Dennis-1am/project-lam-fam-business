@@ -28,6 +28,24 @@ async function findCaseInsensitive(name: string) {
   return tags.find((tag) => tag.name.toLowerCase() === lower) ?? null;
 }
 
+async function getOrCreateTag(name: string) {
+  const tagName = validateTagName(name);
+  let tag = await findCaseInsensitive(tagName);
+  if (!tag) {
+    tag = await db.tag.create({ data: { name: tagName } });
+  }
+  return tag;
+}
+
+export async function createTag(name: string) {
+  await requireAdmin();
+  const tag = await getOrCreateTag(name);
+
+  revalidatePath("/");
+
+  return { tagId: tag.id, name: tag.name };
+}
+
 export async function assignProductTag(productId: string, tagId: string | null) {
   await requireAdmin();
   ensureProduct(productId);
@@ -45,12 +63,7 @@ export async function createTagAndAssign(productId: string, name: string) {
   await requireAdmin();
   ensureProduct(productId);
 
-  const tagName = validateTagName(name);
-
-  let tag = await findCaseInsensitive(tagName);
-  if (!tag) {
-    tag = await db.tag.create({ data: { name: tagName } });
-  }
+  const tag = await getOrCreateTag(name);
 
   await db.product.update({
     where: { id: productId },

@@ -9,6 +9,7 @@ import type { CroppableImage } from "@/lib/crop";
 import { useTranslation } from "@/lib/language-context";
 import { deleteProduct } from "@/app/actions";
 import { ConfirmDialog } from "./confirm-dialog";
+import { DeleteButton } from "./delete-button";
 
 type ProductCardProps = {
   id: string;
@@ -74,17 +75,15 @@ export function ProductCard({
           </span>
         )}
         {isAdmin && (
-          <button
-            className="absolute top-2 right-2 bg-red-100 text-red-600 rounded-md w-8 h-8 flex items-center justify-center text-lg leading-none hover:bg-red-200 transition-colors"
+          <DeleteButton
+            className="absolute right-2 top-2"
+            aria-label={t("delete")}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setConfirming(true);
             }}
-            aria-label={t("delete")}
-          >
-            ×
-          </button>
+          />
         )}
       </div>
       <div className="mt-2 px-1">

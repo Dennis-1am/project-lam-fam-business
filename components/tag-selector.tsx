@@ -5,15 +5,17 @@ import { useTranslation } from "@/lib/language-context";
 import { TAG_NAME_MAX_LENGTH } from "@/lib/tags";
 import {
   assignProductTag,
+  createTag,
   createTagAndAssign,
   deleteTag,
 } from "@/app/tag-actions";
 import { ConfirmDialog } from "./confirm-dialog";
+import { DeleteButton } from "./delete-button";
 
 type Tag = { id: string; name: string };
 
 type TagSelectorProps = {
-  productId: string;
+  productId?: string;
   initialTagId?: string | null;
   initialTagName?: string | null;
 };
@@ -84,6 +86,11 @@ export function TagSelector({
   function selectTag(tag: Tag | null) {
     if (busy) return;
     setError(null);
+    if (!productId) {
+      setSelected(tag);
+      setOpen(false);
+      return;
+    }
     const prev = selected;
     setSelected(tag);
     setOpen(false);
@@ -138,8 +145,9 @@ export function TagSelector({
     setAdding(false);
     setInputValue("");
     setBusy(true);
+    const request = productId ? createTagAndAssign(productId, name) : createTag(name);
     startTransition(() => {
-      createTagAndAssign(productId, name)
+      request
         .then((created) => {
           setTags((prev) =>
             (prev ?? []).map((tag) =>
@@ -197,6 +205,9 @@ export function TagSelector({
 
   return (
     <div ref={rootRef} className="relative">
+      {!productId && (
+        <input type="hidden" name="tagId" value={selected?.id ?? ""} />
+      )}
       <span className="mb-1 block text-sm font-medium text-neutral-700">
         {t("tag")}
       </span>
@@ -260,17 +271,14 @@ export function TagSelector({
                   >
                     {tag.name}
                   </button>
-                  <button
-                    type="button"
+                  <DeleteButton
+                    className="mr-2"
                     aria-label={`${t("delete")}: ${tag.name}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       setConfirmingTag(tag);
                     }}
-                    className="mr-2 flex h-6 w-6 shrink-0 items-center justify-center rounded p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-red-600"
-                  >
-                    ×
-                  </button>
+                  />
                 </div>
               ))}
 
