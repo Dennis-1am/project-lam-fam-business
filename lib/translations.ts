@@ -43,6 +43,8 @@ export const translations: Record<Language, Record<string, string>> = {
     tagNameRequired: "Please enter a tag name.",
     tagNameTooLong: "Tag name must be 50 characters or fewer.",
     tagLoadFailed: "Couldn't load tags.",
+    deleteTagConfirm:
+      'Delete "{tag}"? This removes the tag from all products.',
     noImage: "No image",
     productImage: "Product image",
     jumpToImage: "Jump to image",
@@ -90,6 +92,7 @@ export const translations: Record<Language, Record<string, string>> = {
     tagNameRequired: "请输入标签名称。",
     tagNameTooLong: "标签名称不能超过 50 个字符。",
     tagLoadFailed: "无法加载标签。",
+    deleteTagConfirm: '删除标签 "{tag}"？该操作会从所有产品中移除该标签。',
     noImage: "无图片",
     productImage: "产品图片",
     jumpToImage: "跳转到图片",

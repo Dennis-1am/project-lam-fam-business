@@ -8,6 +8,7 @@ import {
   createTagAndAssign,
   deleteTag,
 } from "@/app/tag-actions";
+import { ConfirmDialog } from "./confirm-dialog";
 
 type Tag = { id: string; name: string };
 
@@ -34,6 +35,7 @@ export function TagSelector({
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmingTag, setConfirmingTag] = useState<Tag | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
   const rootRef = useRef<HTMLDivElement>(null);
@@ -263,7 +265,7 @@ export function TagSelector({
                     aria-label={`${t("delete")}: ${tag.name}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      removeTag(tag);
+                      setConfirmingTag(tag);
                     }}
                     className="mr-2 flex h-6 w-6 shrink-0 items-center justify-center rounded p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-red-600"
                   >
@@ -293,6 +295,22 @@ export function TagSelector({
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmingTag !== null}
+        message={
+          confirmingTag
+            ? t("deleteTagConfirm").replace("{tag}", confirmingTag.name)
+            : ""
+        }
+        onCancel={() => setConfirmingTag(null)}
+        onConfirm={() => {
+          if (confirmingTag) {
+            removeTag(confirmingTag);
+            setConfirmingTag(null);
+          }
+        }}
+      />
     </div>
   );
 }
