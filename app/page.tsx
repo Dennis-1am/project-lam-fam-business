@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { ProductCard } from "@/components/product-card";
 import { AddProductTile } from "@/components/add-product-tile";
 import { TagFilter } from "@/components/tag-filter";
+import { EmptyCatalogMessage, NoFilterResultsMessage } from "@/components/no-products-message";
 import { cookies } from "next/headers";
 
 export const metadata = {
@@ -21,10 +22,7 @@ export default async function CatalogPage({
 }) {
   const { page: pageParam, tag: tagParam, untagged: untaggedParam } =
     await searchParams;
-  const requestedPage = Number(pageParam);
-  const page =
-    Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-  const skip = (page - 1) * PAGE_SIZE;
+  const rawPage = /^\d+$/.test(pageParam ?? "") ? Number(pageParam) : 1;
 
   const untagged = untaggedParam === "1";
   const tagId = !untagged && tagParam ? tagParam : null;
@@ -39,16 +37,18 @@ export default async function CatalogPage({
       ? { tagId }
       : {};
 
-  const [productsWithExtra, total] = await Promise.all([
-    db.product.findMany({
-      where,
-      include: { tag: true, images: { orderBy: { position: "asc" }, take: 1 } },
-      orderBy: { createdAt: "desc" },
-      skip,
-      take: PAGE_SIZE + 1,
-    }),
-    db.product.count({ where }),
-  ]);
+  const total = await db.product.count({ where });
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.max(1, Math.min(rawPage, totalPages));
+  const skip = (page - 1) * PAGE_SIZE;
+
+  const productsWithExtra = await db.product.findMany({
+    where,
+    include: { tag: true, images: { orderBy: { position: "asc" }, take: 1 } },
+    orderBy: { createdAt: "desc" },
+    skip,
+    take: PAGE_SIZE + 1,
+  });
 
   const activeTag = tagId
     ? await db.tag.findUnique({
@@ -59,8 +59,6 @@ export default async function CatalogPage({
 
   const hasMore = productsWithExtra.length > PAGE_SIZE;
   const products = productsWithExtra.slice(0, PAGE_SIZE);
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const filterActive = untagged || tagId !== null;
 
   function hrefFor(pageNum: number) {
     const search = new URLSearchParams();
@@ -104,13 +102,8 @@ export default async function CatalogPage({
           />
         ))}
       </div>
-      {products.length === 0 && (
-        <div className="rounded-xl border border-dashed border-neutral-300 py-24 text-center text-neutral-400">
-          {filterActive
-            ? "No products match this filter."
-            : "No products yet. Check back soon!"}
-        </div>
-      )}
+      {total === 0 && <EmptyCatalogMessage />}
+      {total > 0 && products.length === 0 && <NoFilterResultsMessage />}
 
       {totalPages > 1 && (
         <nav className="mt-12 flex items-center justify-center gap-4 text-sm">
