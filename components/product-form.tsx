@@ -174,7 +174,7 @@ export function ProductForm({
                 type="button"
                 aria-label="Remove image"
                 onClick={() => removeImage(image.url)}
-                className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-sm text-white hover:bg-black"
+                className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-md bg-black/60 text-sm text-white hover:bg-black"
               >
                 &times;
               </button>
