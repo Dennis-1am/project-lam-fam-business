@@ -1,7 +1,9 @@
 import { db } from "@/lib/db";
 import Link from "next/link";
+import { Prisma } from "@prisma/client";
 import { ProductCard } from "@/components/product-card";
 import { AddProductTile } from "@/components/add-product-tile";
+import { TagFilter } from "@/components/tag-filter";
 import { cookies } from "next/headers";
 
 export const metadata = {
@@ -15,31 +17,59 @@ const PAGE_SIZE = 24;
 export default async function CatalogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; tag?: string; untagged?: string }>;
 }) {
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, tag: tagParam, untagged: untaggedParam } =
+    await searchParams;
   const requestedPage = Number(pageParam);
   const page =
     Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const skip = (page - 1) * PAGE_SIZE;
 
+  const untagged = untaggedParam === "1";
+  const tagId = !untagged && tagParam ? tagParam : null;
+
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("admin_session")?.value;
   const isAdmin = !!sessionCookie;
 
+  const where: Prisma.ProductWhereInput = untagged
+    ? { tagId: null }
+    : tagId
+      ? { tagId }
+      : {};
+
   const [productsWithExtra, total] = await Promise.all([
     db.product.findMany({
+      where,
       include: { tag: true, images: { orderBy: { position: "asc" }, take: 1 } },
       orderBy: { createdAt: "desc" },
       skip,
       take: PAGE_SIZE + 1,
     }),
-    db.product.count(),
+    db.product.count({ where }),
   ]);
+
+  const activeTag = tagId
+    ? await db.tag.findUnique({
+        where: { id: tagId },
+        select: { id: true, name: true },
+      })
+    : null;
 
   const hasMore = productsWithExtra.length > PAGE_SIZE;
   const products = productsWithExtra.slice(0, PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const filterActive = untagged || tagId !== null;
+
+  function hrefFor(pageNum: number) {
+    const search = new URLSearchParams();
+    if (untagged) search.set("untagged", "1");
+    else if (tagId) search.set("tag", tagId);
+    if (pageNum > 1) search.set("page", String(pageNum));
+    const qs = search.toString();
+    return qs ? `/?${qs}` : "/";
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -56,6 +86,8 @@ export default async function CatalogPage({
           </p>
         )}
       </section>
+
+      <TagFilter activeTag={tagId ? activeTag : null} untagged={untagged} />
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {isAdmin && page === 1 && <AddProductTile />}
@@ -74,7 +106,9 @@ export default async function CatalogPage({
       </div>
       {products.length === 0 && (
         <div className="rounded-xl border border-dashed border-neutral-300 py-24 text-center text-neutral-400">
-          No products yet. Check back soon!
+          {filterActive
+            ? "No products match this filter."
+            : "No products yet. Check back soon!"}
         </div>
       )}
 
@@ -82,7 +116,7 @@ export default async function CatalogPage({
         <nav className="mt-12 flex items-center justify-center gap-4 text-sm">
           {page > 1 ? (
             <Link
-              href={page === 2 ? "/" : `/?page=${page - 1}`}
+              href={hrefFor(page - 1)}
               className="rounded-lg border border-neutral-300 px-4 py-2 transition hover:border-neutral-900"
             >
               Previous
@@ -95,7 +129,7 @@ export default async function CatalogPage({
           </span>
           {hasMore ? (
             <Link
-              href={`/?page=${page + 1}`}
+              href={hrefFor(page + 1)}
               className="rounded-lg border border-neutral-300 px-4 py-2 transition hover:border-neutral-900"
             >
               Next
