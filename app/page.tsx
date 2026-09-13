@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
-import { ProductCard } from "@/components/product-card";
 import Link from "next/link";
+import { ProductCard } from "@/components/product-card";
+import { AddProductTile } from "@/components/add-product-tile";
 import { cookies } from "next/headers";
 
 export const metadata = {
@@ -57,18 +58,7 @@ export default async function CatalogPage({
       </section>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {isAdmin && page === 1 && (
-          <Link
-            href="/admin/new"
-            className="group block"
-            aria-label="Add product"
-          >
-            <div className="relative aspect-square rounded-xl border border-dashed border-neutral-300 bg-neutral-50 flex flex-col items-center justify-center gap-2 text-neutral-400 transition group-hover:border-neutral-400 group-hover:text-neutral-700">
-              <span className="text-4xl leading-none">+</span>
-              <span className="text-sm font-medium">Add product</span>
-            </div>
-          </Link>
-        )}
+        {isAdmin && page === 1 && <AddProductTile />}
         {products.map((product, index) => (
           <ProductCard
             key={product.id}

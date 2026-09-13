@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/header";
-import { SignInOut } from "@/components/sign-in-out";
+import { FooterNav } from "@/components/footer-nav";
 import { siteConfig } from "@/lib/site";
 
 const geistSans = Geist({
@@ -41,15 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <p className="pb-4 text-center font-bold sm:pb-0 sm:text-left">
                   {siteConfig.name}
                 </p>
-                <nav className="flex items-center text-sm text-neutral-500">
-                  <Link
-                    href="/"
-                    className="mr-6 transition-colors hover:text-neutral-900"
-                  >
-                    Catalog
-                  </Link>
-                  <SignInOut />
-                </nav>
+                <FooterNav />
               </div>
               <div className="border-t border-neutral-200 pt-4 text-center text-xs text-neutral-400 sm:pt-6">
                 © 2026 {siteConfig.name}
