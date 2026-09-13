@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatPrice } from "@/lib/site";
@@ -7,6 +8,7 @@ import { cropBoxStyle, cropFromRecord, cropSourceSizes } from "@/lib/crop";
 import type { CroppableImage } from "@/lib/crop";
 import { useTranslation } from "@/lib/language-context";
 import { deleteProduct } from "@/app/actions";
+import { ConfirmDialog } from "./confirm-dialog";
 
 type ProductCardProps = {
   id: string;
@@ -28,10 +30,12 @@ export function ProductCard({
   const t = useTranslation();
   const cover = images[0];
   const coverCrop = cropFromRecord(cover ?? {});
+  const [confirming, setConfirming] = useState(false);
 
   const href = isAdmin ? `/admin/${id}/edit` : `/product/${id}`;
   return (
-    <Link href={href} className="group block">
+    <>
+      <Link href={href} className="group block">
       <div className="relative aspect-square overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100">
         {cover ? (
           coverCrop ? (
@@ -68,11 +72,7 @@ export function ProductCard({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              if (confirm(t("deleteConfirm").replace("{title}", title))) {
-                const formData = new FormData();
-                formData.append("id", id);
-                deleteProduct(formData);
-              }
+              setConfirming(true);
             }}
             aria-label={t("delete")}
           >
@@ -86,6 +86,18 @@ export function ProductCard({
           {formatPrice(priceCents)}
         </p>
       </div>
-    </Link>
+      </Link>
+      <ConfirmDialog
+        open={confirming}
+        message={t("deleteConfirm").replace("{title}", title)}
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => {
+          const formData = new FormData();
+          formData.append("id", id);
+          deleteProduct(formData);
+          setConfirming(false);
+        }}
+      />
+    </>
   );
 }
