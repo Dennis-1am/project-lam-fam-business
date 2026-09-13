@@ -12,6 +12,8 @@ type Product = {
   title: string;
   priceCents: number;
   description: string | null;
+  tagId: string | null;
+  tag: { id: string; name: string } | null;
   images: Array<{
     id: string;
     url: string;
@@ -99,6 +101,8 @@ export default function EditProductPage({
           title: product.title,
           price: (product.priceCents / 100).toFixed(2),
           description: product.description ?? "",
+          tagId: product.tagId,
+          tagName: product.tag?.name ?? null,
           images: product.images.map((img) => ({
             url: img.url,
             cropX: img.cropX,

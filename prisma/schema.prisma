@@ -13,10 +13,22 @@ model Product {
   description String   @default("")
   priceCents  Int      @default(0)
   images      Image[]
+  tagId       String?
+  tag         Tag?     @relation(fields: [tagId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([createdAt])
+  @@index([tagId])
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String
+  products  Product[]
+  createdAt DateTime  @default(now())
+
+  @@unique([name])
 }
 
 model Image {

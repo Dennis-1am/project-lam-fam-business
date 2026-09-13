@@ -15,6 +15,7 @@ type ProductCardProps = {
   title: string;
   priceCents: number;
   images: CroppableImage[];
+  tag?: { id: string; name: string } | null;
   isAdmin?: boolean;
   priority?: boolean;
 };
@@ -24,6 +25,7 @@ export function ProductCard({
   title,
   priceCents,
   images,
+  tag,
   isAdmin = false,
   priority = false,
 }: ProductCardProps) {
@@ -65,6 +67,11 @@ export function ProductCard({
           <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">
             {t("noImage")}
           </div>
+        )}
+        {tag && (
+          <span className="absolute left-2 top-2 rounded-md bg-white/90 px-2 py-0.5 text-xs font-medium text-neutral-700 shadow-sm">
+            {tag.name}
+          </span>
         )}
         {isAdmin && (
           <button

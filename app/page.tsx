@@ -29,7 +29,7 @@ export default async function CatalogPage({
 
   const [productsWithExtra, total] = await Promise.all([
     db.product.findMany({
-      include: { images: { orderBy: { position: "asc" }, take: 1 } },
+      include: { tag: true, images: { orderBy: { position: "asc" }, take: 1 } },
       orderBy: { createdAt: "desc" },
       skip,
       take: PAGE_SIZE + 1,
@@ -66,6 +66,7 @@ export default async function CatalogPage({
             title={product.title}
             priceCents={product.priceCents}
             images={product.images}
+            tag={product.tag}
             isAdmin={isAdmin}
             priority={page === 1 && index === 0}
           />

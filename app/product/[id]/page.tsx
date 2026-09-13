@@ -12,6 +12,7 @@ type Product = {
   title: string;
   priceCents: number;
   description: string | null;
+  tag: { id: string; name: string } | null;
   images: Array<{
     id: string;
     url: string;
@@ -89,6 +90,11 @@ export default function ProductPage({
         <ProductGallery images={product.images} />
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{product.title}</h1>
+          {product.tag && (
+            <span className="mt-2 inline-block rounded-md bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
+              {product.tag.name}
+            </span>
+          )}
           <p className="mt-2 text-2xl font-semibold text-neutral-800">
             {formatPrice(product.priceCents)}
           </p>

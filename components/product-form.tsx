@@ -6,6 +6,7 @@ import { ImageEditor } from "@/components/image-editor";
 import { cropBoxStyle, cropFromRecord, cropSourceSizes } from "@/lib/crop";
 import type { CropData, CroppableImage } from "@/lib/crop";
 import { useTranslation } from "@/lib/language-context";
+import { TagSelector } from "@/components/tag-selector";
 
 type ProductFormProps = {
   action: (formData: FormData) => void | Promise<void>;
@@ -14,6 +15,8 @@ type ProductFormProps = {
     title: string;
     price: string;
     description: string;
+    tagId?: string | null;
+    tagName?: string | null;
     images: CroppableImage[];
   };
   productId?: string;
@@ -125,6 +128,14 @@ export function ProductForm({
           className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-900 focus:outline-none"
         />
       </div>
+
+      {productId && (
+        <TagSelector
+          productId={productId}
+          initialTagId={initial?.tagId ?? null}
+          initialTagName={initial?.tagName ?? null}
+        />
+      )}
 
       <div>
         <span className="mb-1 block text-sm font-medium text-neutral-700">{t("images")}</span>

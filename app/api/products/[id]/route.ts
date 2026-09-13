@@ -8,7 +8,7 @@ export async function GET(
 
   const product = await db.product.findUnique({
     where: { id },
-    include: { images: { orderBy: { position: "asc" } } },
+    include: { tag: true, images: { orderBy: { position: "asc" } } },
   });
 
   if (!product) {
