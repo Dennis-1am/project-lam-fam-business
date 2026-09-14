@@ -42,8 +42,16 @@ npm run dev          # start dev server
 npm run build        # production build
 npm run start        # run production build
 npm run lint         # eslint
-npm run db:seed      # seed/refresh sample product
-npm run db:reset     # drop DB, re-migrate, re-seed
+npm run db:seed      # top up sample products/tags (safe: skips if 75+ products exist)
+npm run db:reset     # DEV ONLY: drop DB, re-migrate, re-seed (wipes data — never on live)
+```
+
+To seed the live database safely, back up first so you can undo:
+
+```bash
+cp prisma/dev.db prisma/dev.db.bak-manual && npm run db:seed
+# undo:
+cp prisma/dev.db.bak-manual prisma/dev.db
 ```
 
 ## Configuration
