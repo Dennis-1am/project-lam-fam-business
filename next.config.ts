@@ -22,13 +22,6 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   images: {
     dangerouslyAllowSVG: false,
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "*.public.blob.vercel-storage.com",
-        pathname: "/**",
-      },
-    ],
   },
   allowedDevOrigins: process.env.ALLOWED_DEV_ORIGINS
     ? process.env.ALLOWED_DEV_ORIGINS.split(",")

@@ -57,10 +57,3 @@ Everything lives in `.env`:
 | `AUTH_SECRET` | Used to sign session cookies |
 
 Site name, tagline, and currency are in `lib/site.ts`.
-
-## Deploying to production
-
-1. Push to GitHub and import the repo on Vercel.
-2. **Database:** SQLite is for local dev. On Vercel use a hosted Postgres — create a free Neon/Supabase database and set `DATABASE_URL` to its connection string. Run `npx prisma migrate deploy` (and seed once) against it. The schema is provider-agnostic, so no code changes are needed.
-3. **Images:** `public/uploads` does not persist on Vercel's serverless runtime. For production, swap `lib/storage.ts` to save/delete via a blob service such as [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) (the `next.config.ts` remote pattern for Vercel Blob is already set). Keep the `/api/upload` route and the `deleteUploadFile` call sites unchanged.
-4. Set `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `AUTH_SECRET` in the Vercel environment.
