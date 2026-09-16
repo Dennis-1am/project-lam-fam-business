@@ -85,5 +85,16 @@ Everything lives in `.env` (production) and `.env.development` (dev):
 | `DATABASE_URL` | SQLite file path (`file:./prod.db` in `.env`, `file:./dev.db` in `.env.development`) |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Admin sign-in credentials |
 | `AUTH_SECRET` | Used to sign session cookies |
+| `GOOGLE_CLOUD_TRANSLATE_API_KEY` | API key for Google Cloud Translation (Basic/v2). Leave as a placeholder in dev to avoid spending the free daily quota. |
+| `TRANSLATE_DAILY_LIMIT` | Soft daily character cap for translations (defaults to 16,000) |
+
+## Product translations
+
+Product names and descriptions can be translated into English, Spanish, and Chinese via Google Cloud Translation. On the product form, set the **source language** (the language you write in); the other two languages are translated automatically on save and served statically to customers from the database.
+
+- **Per-field diffing** — only fields whose source text changed are sent to the API.
+- **Quota wall** — the free daily limit (16,000 chars) is enforced locally. If a translation would exceed it, the save still succeeds and that language simply stays untranslated (shown as "Not translated" with a notice in the admin form). Re-saving the field on a later day regenerates it; there is no background retry job.
+- **Manual overrides** — editing a translated field marks it manual; future source edits will not overwrite it.
+- **Storefront** — the header dropdown (English / Español / 中文) switches product text instantly from stored translations, with no API calls. Untranslated text falls back to the source language wrapped in a `lang` attribute so the browser can offer its own translation.
 
 Site name, tagline, and currency are in `lib/site.ts`.
