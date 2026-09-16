@@ -6,8 +6,10 @@ import Link from "next/link";
 import { formatPrice } from "@/lib/site";
 import { cropBoxStyle, cropFromRecord, cropSourceSizes } from "@/lib/crop";
 import type { CroppableImage } from "@/lib/crop";
-import { useTranslation } from "@/lib/language-context";
+import { useLanguage, useTranslation } from "@/lib/language-context";
 import { deleteProduct } from "@/app/actions";
+import { resolveLocalizedText } from "@/lib/product-i18n";
+import type { ProductTranslationRow } from "@/lib/product-i18n";
 import { ConfirmDialog } from "./confirm-dialog";
 import { DeleteButton } from "./delete-button";
 
@@ -17,6 +19,8 @@ type ProductCardProps = {
   priceCents: number;
   images: CroppableImage[];
   tag?: { id: string; name: string } | null;
+  sourceLanguage?: string;
+  translations?: ProductTranslationRow[];
   isAdmin?: boolean;
   priority?: boolean;
 };
@@ -27,12 +31,22 @@ export function ProductCard({
   priceCents,
   images,
   tag,
+  sourceLanguage = "en",
+  translations = [],
   isAdmin = false,
   priority = false,
 }: ProductCardProps) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const cover = images[0];
   const coverCrop = cropFromRecord(cover ?? {});
+
+  const localized = resolveLocalizedText(
+    { title, description: null, sourceLanguage, translations },
+    language,
+  );
+  const fallbackLang = language !== sourceLanguage && localized.titleIsFallback;
+
   const [confirming, setConfirming] = useState(false);
 
   const href = isAdmin ? `/admin/${id}/edit` : `/product/${id}`;
@@ -46,7 +60,7 @@ export function ProductCard({
               <div style={cropBoxStyle(coverCrop)} className="absolute">
                 <Image
                   src={cover.url}
-                  alt={title}
+                  alt={localized.title}
                   fill
                   sizes={cropSourceSizes(coverCrop, 50, 25)}
                   priority={priority}
@@ -57,7 +71,7 @@ export function ProductCard({
           ) : (
             <Image
               src={cover.url}
-              alt={title}
+              alt={localized.title}
               fill
               sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
               priority={priority}
@@ -87,7 +101,12 @@ export function ProductCard({
         )}
       </div>
       <div className="mt-2 px-1">
-        <h2 className="truncate text-sm font-medium">{title}</h2>
+        <h2
+          className="truncate text-sm font-medium"
+          lang={fallbackLang ? sourceLanguage : undefined}
+        >
+          {localized.title}
+        </h2>
         <p className="text-sm font-semibold text-neutral-700">
           {formatPrice(priceCents)}
         </p>
@@ -95,7 +114,7 @@ export function ProductCard({
       </Link>
       <ConfirmDialog
         open={confirming}
-        message={t("deleteConfirm").replace("{title}", title)}
+        message={t("deleteConfirm").replace("{title}", localized.title)}
         onCancel={() => setConfirming(false)}
         onConfirm={() => {
           const formData = new FormData();

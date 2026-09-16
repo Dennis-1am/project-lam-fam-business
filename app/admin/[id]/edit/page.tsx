@@ -6,12 +6,21 @@ import { notFound } from "next/navigation";
 import { updateProduct } from "@/app/actions";
 import { ProductForm } from "@/components/product-form";
 import { useTranslation } from "@/lib/language-context";
+import type { Language } from "@/lib/translations";
 
 type Product = {
   id: string;
   title: string;
   priceCents: number;
   description: string | null;
+  sourceLanguage: string;
+  translations: Array<{
+    language: string;
+    title: string;
+    description: string;
+    titleManual: boolean;
+    descriptionManual: boolean;
+  }>;
   tagId: string | null;
   tag: { id: string; name: string } | null;
   images: Array<{
@@ -101,6 +110,14 @@ export default function EditProductPage({
           title: product.title,
           price: (product.priceCents / 100).toFixed(2),
           description: product.description ?? "",
+          sourceLanguage: product.sourceLanguage as Language,
+          translations: product.translations.map((t) => ({
+            language: t.language,
+            title: t.title,
+            description: t.description,
+            titleManual: t.titleManual,
+            descriptionManual: t.descriptionManual,
+          })),
           tagId: product.tagId,
           tagName: product.tag?.name ?? null,
           images: product.images.map((img) => ({

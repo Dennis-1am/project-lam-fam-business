@@ -18,7 +18,10 @@ export async function GET(request: Request) {
 
   const [items, total] = await Promise.all([
     db.product.findMany({
-      include: { images: { orderBy: { position: "asc" } } },
+      include: {
+        images: { orderBy: { position: "asc" } },
+        translations: true,
+      },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,

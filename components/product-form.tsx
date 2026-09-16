@@ -8,6 +8,16 @@ import type { CropData, CroppableImage } from "@/lib/crop";
 import { useTranslation } from "@/lib/language-context";
 import { TagSelector } from "@/components/tag-selector";
 import { DeleteButton } from "@/components/delete-button";
+import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES, targetLanguages } from "@/lib/languages";
+import type { Language } from "@/lib/translations";
+
+export type TranslationEntry = {
+  language: string;
+  title: string;
+  description: string;
+  titleManual: boolean;
+  descriptionManual: boolean;
+};
 
 type ProductFormProps = {
   action: (formData: FormData) => void | Promise<void>;
@@ -18,6 +28,8 @@ type ProductFormProps = {
     description: string;
     tagId?: string | null;
     tagName?: string | null;
+    sourceLanguage?: Language;
+    translations?: TranslationEntry[];
     images: CroppableImage[];
   };
   productId?: string;
@@ -32,6 +44,9 @@ export function ProductForm({
   productId,
 }: ProductFormProps) {
   const t = useTranslation();
+  const [sourceLanguage, setSourceLanguage] = useState<Language>(
+    initial?.sourceLanguage ?? "en",
+  );
   const [images, setImages] = useState<PendingImage[]>(
     initial?.images.map((img) => ({
       url: img.url,
@@ -42,6 +57,11 @@ export function ProductForm({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editorIndex, setEditorIndex] = useState<number | null>(null);
+
+  const translationsByLang = new Map(
+    (initial?.translations ?? []).map((entry) => [entry.language, entry]),
+  );
+  const translationLanguages = targetLanguages(sourceLanguage);
 
   function handleFiles(fileList: FileList | null) {
     if (!fileList) return;
@@ -83,6 +103,25 @@ export function ProductForm({
   return (
     <form action={action} className="mx-auto max-w-2xl space-y-6">
       {productId && <input type="hidden" name="id" value={productId} />}
+
+      <div>
+        <label htmlFor="sourceLanguage" className="mb-1 block text-sm font-medium text-neutral-700">
+          {t("sourceLanguage")}
+        </label>
+        <select
+          id="sourceLanguage"
+          name="sourceLanguage"
+          value={sourceLanguage}
+          onChange={(e) => setSourceLanguage(e.target.value as Language)}
+          className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 focus:border-neutral-900 focus:outline-none"
+        >
+          {SUPPORTED_LANGUAGES.map((lang) => (
+            <option key={lang} value={lang}>
+              {LANGUAGE_LABELS[lang]}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div>
         <label htmlFor="title" className="mb-1 block text-sm font-medium text-neutral-700">
@@ -129,6 +168,77 @@ export function ProductForm({
           className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-900 focus:outline-none"
         />
       </div>
+
+      {productId && (
+        <div className="space-y-4">
+          <div>
+            <span className="mb-1 block text-sm font-medium text-neutral-700">
+              {t("productTranslations")}
+            </span>
+            <p className="mb-2 text-xs text-neutral-500">
+              {t("translationsHint")}
+            </p>
+          </div>
+
+          {translationLanguages.map((lang) => {
+            const entry = translationsByLang.get(lang);
+            const missing = !entry;
+            return (
+              <fieldset
+                key={lang}
+                className="rounded-lg border border-neutral-200 p-4"
+              >
+                <legend className="px-1 text-sm font-semibold text-neutral-800">
+                  {LANGUAGE_LABELS[lang]}
+                </legend>
+
+                {missing && (
+                  <p className="mb-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    {t("quotaNotice")}
+                  </p>
+                )}
+
+                <div className="space-y-3">
+                  <div>
+                    <div className="mb-1 flex items-center gap-2">
+                      <label htmlFor={`translation-${lang}-title`} className="text-sm font-medium text-neutral-700">
+                        {t("title")}
+                      </label>
+                      <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                        {entry?.titleManual ? t("manualLabel") : t("autoLabel")}
+                      </span>
+                    </div>
+                    <input
+                      id={`translation-${lang}-title`}
+                      name={`translations[${lang}][title]`}
+                      type="text"
+                      defaultValue={entry?.title ?? ""}
+                      className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-900 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center gap-2">
+                      <label htmlFor={`translation-${lang}-description`} className="text-sm font-medium text-neutral-700">
+                        {t("description")}
+                      </label>
+                      <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                        {entry?.descriptionManual ? t("manualLabel") : t("autoLabel")}
+                      </span>
+                    </div>
+                    <textarea
+                      id={`translation-${lang}-description`}
+                      name={`translations[${lang}][description]`}
+                      rows={3}
+                      defaultValue={entry?.description ?? ""}
+                      className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-900 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </fieldset>
+            );
+          })}
+        </div>
+      )}
 
       <TagSelector
         productId={productId}
