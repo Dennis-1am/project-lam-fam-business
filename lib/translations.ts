@@ -1,4 +1,4 @@
-export type Language = "en" | "zh";
+export type Language = "en" | "es" | "zh";
 
 export const translations: Record<Language, Record<string, string>> = {
   en: {
@@ -54,6 +54,79 @@ export const translations: Record<Language, Record<string, string>> = {
     productImage: "Product image",
     jumpToImage: "Jump to image",
     backToCatalog: "Catalog",
+    sourceLanguage: "Source language",
+    productTranslations: "Product translations",
+    translationsHint:
+      "Editable translations shown here are stored and served to customers. Editing one marks it as manual so future edits to the source text won't overwrite it.",
+    notTranslatedLabel: "Not translated",
+    manualLabel: "Manual",
+    autoLabel: "Auto",
+    quotaNotice:
+      "Not translated — Google's free daily quota (16,000 characters) is exhausted, and translating further today will incur costs. Re-save this product tomorrow to generate it. You can also fill it in manually below.",
+  },
+  es: {
+    catalog: "Catálogo",
+    admin: "Administración",
+    products: "Productos",
+    filter: "Filtrar",
+    allProducts: "Todos los productos",
+    clearFilter: "Limpiar filtro",
+    addProduct: "Añadir producto",
+    newProduct: "Nuevo producto",
+    editProduct: "Editar producto",
+    createProduct: "Crear producto",
+    saveChanges: "Guardar cambios",
+    view: "Ver",
+    edit: "Editar",
+    delete: "Eliminar",
+    deleteConfirm: '¿Eliminar "{title}"?',
+    confirm: "Confirmar",
+    noProductsFilter: "Ningún producto coincide con este filtro.",
+    noProductsSoon: "Aún no hay productos. ¡Vuelve pronto!",
+    catalogHealth: "Todos los productos ya tienen una etiqueta asignada.",
+    signOut: "Cerrar sesión",
+    signIn: "Iniciar sesión",
+    signingIn: "Iniciando sesión...",
+    adminSignIn: "Inicio de sesión de administrador",
+    username: "Usuario",
+    password: "Contraseña",
+    title: "Título",
+    price: "Precio ($)",
+    description: "Descripción",
+    images: "Imágenes",
+    cropImageHint:
+      "Pulsa una imagen para recortarla. Solo se conserva el archivo original; el recorte se aplica al visualizarlo.",
+    addImage: "Añadir imagen",
+    uploading: "Subiendo...",
+    cropped: "Recortado",
+    cancel: "Cancelar",
+    apply: "Aplicar",
+    zoom: "Zoom",
+    tag: "Etiqueta",
+    addNewTag: "Añadir nueva etiqueta",
+    selectTag: "Seleccionar una etiqueta",
+    noTag: "Sin etiqueta",
+    noTagsYet: "Aún no hay etiquetas — crea la primera.",
+    tagName: "Nombre de la etiqueta",
+    createTag: "Guardar",
+    tagNameRequired: "Introduce un nombre de etiqueta.",
+    tagNameTooLong: "El nombre de la etiqueta no puede superar los 50 caracteres.",
+    tagLoadFailed: "No se pudieron cargar las etiquetas.",
+    deleteTagConfirm:
+      '¿Eliminar la etiqueta "{tag}"? Esto la quitará de todos los productos.',
+    noImage: "Sin imagen",
+    productImage: "Imagen del producto",
+    jumpToImage: "Ir a la imagen",
+    backToCatalog: "Catálogo",
+    sourceLanguage: "Idioma de origen",
+    productTranslations: "Traducciones del producto",
+    translationsHint:
+      "Las traducciones editables que se muestran aquí se guardan y se sirven a los clientes. Editarla la marca como manual para que futuros cambios del texto original no la sobrescriban.",
+    notTranslatedLabel: "Sin traducir",
+    manualLabel: "Manual",
+    autoLabel: "Automática",
+    quotaNotice:
+      "Sin traducir: se ha agotado la cuota gratuita diaria de Google (16 000 caracteres) y traducir hoy supondrá costes. Vuelve a guardar este producto mañana para generarla. También puedes rellenarla manualmente a continuación.",
   },
   zh: {
     catalog: "目录",
@@ -107,6 +180,15 @@ export const translations: Record<Language, Record<string, string>> = {
     productImage: "产品图片",
     jumpToImage: "跳转到图片",
     backToCatalog: "目录",
+    sourceLanguage: "源语言",
+    productTranslations: "产品翻译",
+    translationsHint:
+      "此处显示的可编辑翻译会保存并展示给顾客。编辑过的翻译会被标记为手动，之后源文本的修改不会覆盖它。",
+    notTranslatedLabel: "未翻译",
+    manualLabel: "手动",
+    autoLabel: "自动",
+    quotaNotice:
+      "未翻译：Google 每日免费额度（16,000 字符）已用完，今日继续翻译将产生费用。请明天重新保存此产品以生成翻译，也可以手动填写。",
   },
 };
 

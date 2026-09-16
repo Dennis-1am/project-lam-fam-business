@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { siteConfig } from "@/lib/site";
-import { LanguageToggle } from "@/components/language-toggle";
+import { LanguageSelector } from "@/components/language-selector";
 import { SignInOut } from "@/components/sign-in-out";
 import { useTranslation } from "@/lib/language-context";
 
@@ -20,7 +20,7 @@ export function Header() {
             {t("catalog")}
           </Link>
           <SignInOut />
-          <LanguageToggle />
+          <LanguageSelector />
         </nav>
       </div>
     </header>
