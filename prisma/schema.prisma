@@ -8,15 +8,17 @@ datasource db {
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  title       String
-  description String   @default("")
-  priceCents  Int      @default(0)
-  images      Image[]
-  tagId       String?
-  tag         Tag?     @relation(fields: [tagId], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String               @id @default(cuid())
+  title          String
+  description    String               @default("")
+  priceCents     Int                  @default(0)
+  sourceLanguage String               @default("en")
+  images         Image[]
+  tagId          String?
+  tag            Tag?                 @relation(fields: [tagId], references: [id], onDelete: SetNull)
+  translations   ProductTranslation[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 
   @@index([createdAt])
   @@index([tagId])
@@ -44,4 +46,26 @@ model Image {
   createdAt  DateTime @default(now())
 
   @@index([productId])
+}
+
+model ProductTranslation {
+  id                  String   @id @default(cuid())
+  productId           String
+  product             Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  language            String
+  title               String   @default("")
+  description         String   @default("")
+  titleManual         Boolean  @default(false)
+  descriptionManual   Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
+
+  @@unique([productId, language])
+  @@index([productId])
+}
+
+model TranslationQuota {
+  id        Int      @id @default(1)
+  date      String
+  usedChars Int      @default(0)
+  updatedAt DateTime @updatedAt
 }
