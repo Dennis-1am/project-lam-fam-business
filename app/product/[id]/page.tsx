@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { formatPrice } from "@/lib/site";
 import { ProductGallery } from "@/components/product-gallery";
+import { CatalogLink } from "@/components/catalog-link";
 import { useLanguage, useTranslation } from "@/lib/language-context";
 import { resolveLocalizedText } from "@/lib/product-i18n";
 import type { ProductTranslationRow } from "@/lib/product-i18n";
@@ -64,9 +64,9 @@ export default function ProductPage({
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
         <nav className="mb-6 text-sm text-neutral-500">
-          <Link href="/" className="hover:text-neutral-900">
-            {t("backToCatalog")}
-          </Link>
+          <CatalogLink className="hover:text-neutral-900">
+            {t("products")}
+          </CatalogLink>
           <span className="mx-2">/</span>
           <span className="text-neutral-900">Loading...</span>
         </nav>
@@ -94,9 +94,9 @@ export default function ProductPage({
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <nav className="mb-6 text-sm text-neutral-500">
-        <Link href="/" className="hover:text-neutral-900">
-          {t("backToCatalog")}
-        </Link>
+        <CatalogLink className="hover:text-neutral-900">
+          {t("products")}
+        </CatalogLink>
         <span className="mx-2">/</span>
         <span className="text-neutral-900" lang={titleLangAttr}>
           {localized.title}

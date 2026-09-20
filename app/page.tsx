@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { Prisma } from "@prisma/client";
@@ -5,6 +6,7 @@ import { ProductCard } from "@/components/product-card";
 import { AddProductTile } from "@/components/add-product-tile";
 import { TagFilter } from "@/components/tag-filter";
 import { getSession } from "@/lib/auth";
+import { CatalogLocationMemory } from "@/components/catalog-location-memory";
 import { CatalogHealthMessage, EmptyCatalogMessage, NoFilterResultsMessage } from "@/components/no-products-message";
 
 export const metadata = {
@@ -76,6 +78,9 @@ export default async function CatalogPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
+      <Suspense fallback={null}>
+        <CatalogLocationMemory />
+      </Suspense>
       <section className="pb-10 pt-6">
         <p className="text-sm font-medium uppercase tracking-widest text-neutral-400">
           Family wholesale · Since 2010

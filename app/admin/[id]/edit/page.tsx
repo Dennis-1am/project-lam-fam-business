@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { updateProduct } from "@/app/actions";
 import { ProductForm } from "@/components/product-form";
+import { CatalogLink } from "@/components/catalog-link";
 import { useTranslation } from "@/lib/language-context";
 import type { Language } from "@/lib/translations";
 
@@ -69,9 +69,9 @@ export default function EditProductPage({
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
         <nav className="mb-6 text-sm text-neutral-500">
-          <Link href="/admin" className="hover:text-neutral-900">
+          <CatalogLink href="/admin" className="hover:text-neutral-900">
             {t("products")}
-          </Link>
+          </CatalogLink>
           <span className="mx-2">/</span>
           <span className="text-neutral-900">Loading...</span>
         </nav>
@@ -92,9 +92,9 @@ export default function EditProductPage({
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <nav className="mb-6 text-sm text-neutral-500">
-        <Link href="/admin" className="hover:text-neutral-900">
+        <CatalogLink href="/admin" className="hover:text-neutral-900">
           {t("products")}
-        </Link>
+        </CatalogLink>
         <span className="mx-2">/</span>
         <span className="text-neutral-900">{product.title}</span>
       </nav>
