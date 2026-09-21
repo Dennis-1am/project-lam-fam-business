@@ -1,10 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
+import { UPLOADS_DIR } from "../lib/storage";
 
 const prisma = new PrismaClient();
-
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
 
 const PRODUCT_COUNT = 75;
 const MAX_IMAGES_PER_PRODUCT = 5;
@@ -119,13 +119,6 @@ const PALETTES: Array<[string, string]> = [
   ["#f0a1a1", "#b03d3d"], ["#e8e3d0", "#9aa0ab"],
 ];
 
-function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
 function shade(from: string, to: string, step: number, total: number): [string, string] {
   const factor = step / Math.max(1, total - 1);
   const mix = (a: number, b: number) => Math.round(a + (b - a) * factor);
@@ -220,15 +213,14 @@ async function main() {
 
   for (let i = existingCount; i < PRODUCT_COUNT; i++) {
     const sample = samples[i];
-    const slug = slugify(sample.title);
     const urls: string[] = [];
 
     for (let j = 0; j < sample.imageCount; j++) {
       const [from, to] = shade(sample.from, sample.to, j, sample.imageCount);
-      const file = `sample-${slug}-${j + 1}.svg`;
+      const file = `${Date.now()}-${randomUUID()}.svg`;
       const filePath = path.join(UPLOADS_DIR, file);
       await writeFile(filePath, svgPlaceholder(sample.title, sample.icon, from, to));
-      urls.push(`/uploads/${file}`);
+      urls.push(`/api/images/${file}`);
     }
 
     const tagName = tagNameForIndex(i);

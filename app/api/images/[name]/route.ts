@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { UPLOADS_DIR } from "@/lib/storage";
 
-const NAME_PATTERN = /^\d+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|gif|avif)$/;
+const NAME_PATTERN = /^\d+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|gif|avif|svg)$/;
 
 const CONTENT_TYPES: Record<string, string> = {
   jpg: "image/jpeg",
@@ -10,6 +10,7 @@ const CONTENT_TYPES: Record<string, string> = {
   webp: "image/webp",
   gif: "image/gif",
   avif: "image/avif",
+  svg: "image/svg+xml",
 };
 
 export async function GET(

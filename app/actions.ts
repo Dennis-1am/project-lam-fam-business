@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { deleteUploadFile } from "@/lib/storage";
@@ -157,6 +157,7 @@ export async function createProduct(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidateTag("products", "max");
   redirect(`/admin/${product.id}/edit`);
 }
 
@@ -373,6 +374,7 @@ export async function updateProduct(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/product/[id]", "page");
   revalidatePath("/admin");
+  revalidateTag("products", "max");
   redirect(`/admin/${productId}/edit`);
 }
 
@@ -403,5 +405,6 @@ export async function deleteProduct(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidateTag("products", "max");
   redirect("/admin");
 }

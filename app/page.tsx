@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { Prisma } from "@prisma/client";
@@ -18,6 +19,87 @@ export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 24;
 
+const CATALOG_TAG = "products";
+const CATALOG_TTL_SECONDS = 300;
+
+type CatalogProductRow = Prisma.ProductGetPayload<{
+  include: {
+    tag: true;
+    images: { orderBy: { position: "asc" }; take: 1 };
+    translations: true;
+  };
+}>;
+
+type CatalogProduct = CatalogProductRow & {
+  title: string;
+  description: string | null;
+};
+
+type CatalogResult = {
+  total: number;
+  totalPages: number;
+  catalogTotal: number;
+  products: CatalogProduct[];
+  activeTag: { id: string; name: string } | null;
+  hasMore: boolean;
+};
+
+const getCatalogData = unstable_cache(
+  async ({
+    rawPage,
+    tagId,
+    untagged,
+  }: {
+    rawPage: number;
+    tagId: string | null;
+    untagged: boolean;
+  }): Promise<CatalogResult> => {
+    const where: Prisma.ProductWhereInput = untagged
+      ? { tagId: null }
+      : tagId
+        ? { tagId }
+        : {};
+
+    const [total, catalogTotal] = await Promise.all([
+      db.product.count({ where }),
+      db.product.count(),
+    ]);
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const page = Math.max(1, Math.min(rawPage, totalPages));
+    const skip = (page - 1) * PAGE_SIZE;
+
+    const productsWithExtra = await db.product.findMany({
+      where,
+      include: {
+        tag: true,
+        images: { orderBy: { position: "asc" }, take: 1 },
+        translations: true,
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: PAGE_SIZE + 1,
+    });
+
+    const activeTag = tagId
+      ? await db.tag.findUnique({
+          where: { id: tagId },
+          select: { id: true, name: true },
+        })
+      : null;
+
+    return {
+      total,
+      totalPages,
+      catalogTotal,
+      products: productsWithExtra.slice(0, PAGE_SIZE).map(assembleProduct),
+      activeTag,
+      hasMore: productsWithExtra.length > PAGE_SIZE,
+    };
+  },
+  ["catalog"],
+  { tags: [CATALOG_TAG], revalidate: CATALOG_TTL_SECONDS },
+);
+
 export default async function CatalogPage({
   searchParams,
 }: {
@@ -31,41 +113,9 @@ export default async function CatalogPage({
   const untagged = isAdmin && untaggedParam === "1";
   const tagId = !untagged && tagParam ? tagParam : null;
 
-  const where: Prisma.ProductWhereInput = untagged
-    ? { tagId: null }
-    : tagId
-      ? { tagId }
-      : {};
-
-  const [total, catalogTotal] = await Promise.all([
-    db.product.count({ where }),
-    db.product.count(),
-  ]);
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const { total, totalPages, catalogTotal, products, activeTag, hasMore } =
+    await getCatalogData({ rawPage, tagId, untagged });
   const page = Math.max(1, Math.min(rawPage, totalPages));
-  const skip = (page - 1) * PAGE_SIZE;
-
-  const productsWithExtra = await db.product.findMany({
-    where,
-    include: {
-      tag: true,
-      images: { orderBy: { position: "asc" }, take: 1 },
-      translations: true,
-    },
-    orderBy: { createdAt: "desc" },
-    skip,
-    take: PAGE_SIZE + 1,
-  });
-
-  const activeTag = tagId
-    ? await db.tag.findUnique({
-        where: { id: tagId },
-        select: { id: true, name: true },
-      })
-    : null;
-
-  const hasMore = productsWithExtra.length > PAGE_SIZE;
-  const products = productsWithExtra.slice(0, PAGE_SIZE).map(assembleProduct);
   const showHealth = isAdmin && untagged && total === 0 && catalogTotal > 0;
 
   function hrefFor(pageNum: number) {

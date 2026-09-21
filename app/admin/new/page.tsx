@@ -1,39 +1,15 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { createProduct } from "@/app/actions";
 import { ProductForm } from "@/components/product-form";
 import { CatalogLink } from "@/components/catalog-link";
-import { useTranslation } from "@/lib/language-context";
+import { requireAdmin } from "@/lib/auth";
+import { getLanguage } from "@/lib/language-server";
+import { getTranslation } from "@/lib/translations";
 
-export default function NewProductPage() {
-  const t = useTranslation();
-  const [authorized, setAuthorized] = useState(false);
+export default async function NewProductPage() {
+  await requireAdmin();
 
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated) {
-          setAuthorized(true);
-        } else {
-          window.location.href = "/admin/login";
-        }
-      })
-      .catch(() => {
-        window.location.href = "/admin/login";
-      });
-  }, []);
-
-  if (!authorized) {
-    return (
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="rounded-xl border border-dashed border-neutral-300 py-24 text-center text-neutral-400">
-          Loading...
-        </div>
-      </div>
-    );
-  }
+  const language = await getLanguage();
+  const t = (key: string) => getTranslation(language, key);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { TAG_NAME_MAX_LENGTH } from "@/lib/tags";
@@ -36,6 +36,7 @@ export async function createTag(name: string) {
   const tag = await getOrCreateTag(name);
 
   revalidatePath("/");
+  revalidateTag("products", "max");
 
   return { tagId: tag.id, name: tag.name };
 }
@@ -49,4 +50,5 @@ export async function deleteTag(tagId: string) {
   await db.tag.delete({ where: { id: tagId } });
 
   revalidatePath("/");
+  revalidateTag("products", "max");
 }

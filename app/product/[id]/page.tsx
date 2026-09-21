@@ -1,86 +1,49 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { db } from "@/lib/db";
 import { formatPrice } from "@/lib/site";
 import { ProductGallery } from "@/components/product-gallery";
 import { CatalogLink } from "@/components/catalog-link";
-import { useLanguage, useTranslation } from "@/lib/language-context";
-import { resolveLocalizedText } from "@/lib/product-i18n";
-import type { ProductTranslationRow } from "@/lib/product-i18n";
+import { assembleProduct, resolveLocalizedText } from "@/lib/product-i18n";
+import { getLanguage } from "@/lib/language-server";
+import { getTranslation } from "@/lib/translations";
 
-type Product = {
-  id: string;
-  title: string;
-  priceCents: number;
-  description: string | null;
-  sourceLanguage: string;
-  translations: ProductTranslationRow[];
-  tag: { id: string; name: string } | null;
-  images: Array<{
-    id: string;
-    url: string;
-    cropX: number | null;
-    cropY: number | null;
-    cropWidth: number | null;
-    cropHeight: number | null;
-    position: number;
-  }>;
+type Props = {
+  params: Promise<{ id: string }>;
 };
 
-export default function ProductPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const t = useTranslation();
-  const { language } = useLanguage();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFoundError, setNotFoundError] = useState(false);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const [product, language] = await Promise.all([
+    db.product.findUnique({
+      where: { id },
+      include: { translations: true },
+    }),
+    getLanguage(),
+  ]);
+  const title = product ? resolveLocalizedText(assembleProduct(product), language).title : undefined;
+  return { title: title || "Product" };
+}
 
-  useEffect(() => {
-    params.then(({ id }) => {
-      fetch(`/api/products/${id}`)
-        .then((res) => {
-          if (!res.ok) {
-            setNotFoundError(true);
-            setLoading(false);
-            return;
-          }
-          return res.json();
-        })
-        .then((data) => {
-          if (data) {
-            setProduct(data);
-          }
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    });
-  }, [params]);
+export default async function ProductPage({ params }: Props) {
+  const { id } = await params;
+  const [productRow, language] = await Promise.all([
+    db.product.findUnique({
+      where: { id },
+      include: {
+        tag: true,
+        images: { orderBy: { position: "asc" } },
+        translations: true,
+      },
+    }),
+    getLanguage(),
+  ]);
 
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <nav className="mb-6 text-sm text-neutral-500">
-          <CatalogLink className="hover:text-neutral-900">
-            {t("products")}
-          </CatalogLink>
-          <span className="mx-2">/</span>
-          <span className="text-neutral-900">Loading...</span>
-        </nav>
-        <div className="rounded-xl border border-dashed border-neutral-300 py-24 text-center text-neutral-400">
-          Loading...
-        </div>
-      </div>
-    );
-  }
-
-  if (notFoundError || !product) {
+  if (!productRow) {
     notFound();
   }
 
+  const product = assembleProduct(productRow);
   const localized = resolveLocalizedText(product, language);
   const titleLangAttr =
     language !== product.sourceLanguage && localized.titleIsFallback
@@ -95,7 +58,7 @@ export default function ProductPage({
     <div className="mx-auto max-w-6xl px-4 py-8">
       <nav className="mb-6 text-sm text-neutral-500">
         <CatalogLink className="hover:text-neutral-900">
-          {t("products")}
+          {getTranslation(language, "products")}
         </CatalogLink>
         <span className="mx-2">/</span>
         <span className="text-neutral-900" lang={titleLangAttr}>

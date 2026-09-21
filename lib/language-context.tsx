@@ -11,6 +11,23 @@ type LanguageContextType = {
 };
 
 const STORAGE_KEY = "language";
+const COOKIE_NAME = "language";
+const COOKIE_MAX_AGE = 31536000;
+
+type StoredValue = Language | null;
+
+function validLanguage(value: string | null | undefined): StoredValue {
+  return value === "en" || value === "es" || value === "zh" ? value : null;
+}
+
+function getCookieLanguage(): StoredValue {
+  return validLanguage(
+    document.cookie
+      .split("; ")
+      .find((pair) => pair.startsWith(`${COOKIE_NAME}=`))
+      ?.split("=")[1],
+  );
+}
 
 const listeners = new Set<() => void>();
 
@@ -23,8 +40,11 @@ function subscribe(callback: () => void): () => void {
 
 function getStoredLanguage(): Language {
   if (typeof window === "undefined") return "en";
-  const saved = window.localStorage.getItem(STORAGE_KEY);
-  return saved === "en" || saved === "es" || saved === "zh" ? saved : "en";
+  return (
+    getCookieLanguage() ??
+    validLanguage(window.localStorage.getItem(STORAGE_KEY)) ??
+    "en"
+  );
 }
 
 function notify() {
@@ -42,6 +62,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLanguage = useCallback((lang: Language) => {
     window.localStorage.setItem(STORAGE_KEY, lang);
+    document.cookie = `${COOKIE_NAME}=${lang};path=/;max-age=${COOKIE_MAX_AGE};samesite=Lax`;
     notify();
   }, []);
 
