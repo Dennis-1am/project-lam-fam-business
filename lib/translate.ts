@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import type { Language } from "@/lib/translations";
 import { targetLanguages } from "@/lib/languages";
@@ -32,29 +33,51 @@ function charCount(text: string): number {
   return [...text].length;
 }
 
-// Serialize quota charging so concurrent saves cannot overshoot the daily
-// budget. Charges are reserved before each API call; if Google itself rejects
-// a request for its own quota, we leave the reserved count in place (safe
-// against under-counting, at worst deferring the product to the next day).
+// Serialize quota charging within an instance so concurrent saves cannot
+// overshoot the budget. The reservation itself is atomic across instances:
+// the conditional UPDATE below is evaluated against the row's current values,
+// so two instances can never both cross the cap. Charges are reserved before
+// each API call; if Google itself rejects a request for its own quota, we
+// leave the reserved count in place (safe against under-counting, at worst
+// deferring the product to the next day).
 let quotaQueue: Promise<boolean> = Promise.resolve(true);
 
 function chargeChars(chars: number): Promise<boolean> {
   quotaQueue = quotaQueue.then(async () => {
     const date = pacificDateKey();
-    let row = await db.translationQuota.findUnique({ where: { id: 1 } });
-    if (!row || row.date !== date) {
-      row = await db.translationQuota.upsert({
+    try {
+      // Roll a previous-day row forward to a fresh today row. The `lt` guard
+      // means an already-today row is never reset, so a concurrent charge in
+      // another instance is never wiped.
+      await db.translationQuota.updateMany({
+        where: { id: 1, date: { lt: date } },
+        data: { date, usedChars: 0 },
+      });
+      // Ensure the singleton row exists. The update branch only touches
+      // `date`, never `usedChars`, so in-flight charges are preserved.
+      await db.translationQuota.upsert({
         where: { id: 1 },
-        update: { date, usedChars: 0 },
+        update: { date },
         create: { id: 1, date, usedChars: 0 },
       });
+    } catch (error) {
+      // Concurrent bootstrap: ignore unique violations from two instances
+      // seeding the row at once.
+      if (
+        !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+        error.code !== "P2002"
+      ) {
+        throw error;
+      }
     }
-    if (row.usedChars + chars > DAILY_LIMIT) return false;
-    const updated = await db.translationQuota.update({
-      where: { id: 1 },
+    // Atomic budget reservation across all instances. A failed match means
+    // the budget is exhausted (or the row lost a bootstrap race), so nothing
+    // is reserved.
+    const charged = await db.translationQuota.updateMany({
+      where: { id: 1, date, usedChars: { lte: DAILY_LIMIT - chars } },
       data: { usedChars: { increment: chars } },
     });
-    return updated.usedChars <= DAILY_LIMIT;
+    return charged.count === 1;
   }).catch(() => false);
   return quotaQueue;
 }
@@ -125,8 +148,8 @@ async function safeTranslateField(params: {
 
     const data =
       params.field === "title"
-        ? { title: translated }
-        : { description: translated };
+        ? { title: translated, titleManual: false }
+        : { description: translated, descriptionManual: false };
 
     if (existing) {
       await db.productTranslation.update({ where: { id: existing.id }, data });
@@ -156,8 +179,11 @@ async function safeTranslateField(params: {
  * whether the source changed, so a re-save after quota-wall expiry regenerates
  * it.
  *
- * Fields that are already manually overridden (or freshly edited in the same
- * submission, via `manualEdits`) are left untouched.
+ * `modes` carries the per-field toggle state submitted with the form ("auto"
+ * or "manual"). A field marked manual (or one whose stored manual flag is set
+ * when no explicit mode was submitted) is left untouched. Manual flags are
+ * cleared when a translation is written, so a field flipped back to auto
+ * returns to auto status.
  */
 export async function autoTranslateChangedFields(params: {
   productId: string;
@@ -167,7 +193,7 @@ export async function autoTranslateChangedFields(params: {
     description: { text: string; changed: boolean } | null;
   };
   fillMissing?: boolean;
-  manualEdits?: Record<string, { title?: boolean; description?: boolean }>;
+  modes?: Record<string, { title?: "auto" | "manual"; description?: "auto" | "manual" }>;
 }): Promise<void> {
   for (const language of targetLanguages(params.source)) {
     const existing = await db.productTranslation.findUnique({
@@ -176,14 +202,20 @@ export async function autoTranslateChangedFields(params: {
       },
     });
 
-    const edited = params.manualEdits?.[language];
+    const mode = params.modes?.[language];
 
     if (params.fields.title) {
       const titleExists = existing !== null && existing.title !== "";
+      const titleManual =
+        mode?.title === "manual"
+          ? true
+          : mode?.title === "auto"
+            ? false
+            : (existing?.titleManual ?? false);
       const shouldTranslate =
         params.fields.title.changed || (params.fillMissing && !titleExists);
 
-      if (shouldTranslate && !(existing?.titleManual ?? false) && !edited?.title) {
+      if (shouldTranslate && !titleManual) {
         await safeTranslateField({
           productId: params.productId,
           language,
@@ -196,10 +228,16 @@ export async function autoTranslateChangedFields(params: {
 
     if (params.fields.description) {
       const descExists = existing !== null && existing.description !== "";
+      const descManual =
+        mode?.description === "manual"
+          ? true
+          : mode?.description === "auto"
+            ? false
+            : (existing?.descriptionManual ?? false);
       const shouldTranslate =
         params.fields.description.changed || (params.fillMissing && !descExists);
 
-      if (shouldTranslate && !(existing?.descriptionManual ?? false) && !edited?.description) {
+      if (shouldTranslate && !descManual) {
         await safeTranslateField({
           productId: params.productId,
           language,

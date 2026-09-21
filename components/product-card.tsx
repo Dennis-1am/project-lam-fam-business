@@ -107,9 +107,11 @@ export function ProductCard({
         >
           {localized.title}
         </h2>
-        <p className="text-sm font-semibold text-neutral-700">
-          {formatPrice(priceCents)}
-        </p>
+        {priceCents > 0 && (
+          <p className="text-sm font-semibold text-neutral-700">
+            {formatPrice(priceCents)}
+          </p>
+        )}
       </div>
       </Link>
       <ConfirmDialog

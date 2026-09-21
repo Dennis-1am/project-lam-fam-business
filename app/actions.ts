@@ -11,6 +11,7 @@ import type { Language } from "@/lib/translations";
 
 function parsePrice(input: FormDataEntryValue | null): number {
   const raw = String(input ?? "").trim();
+  if (!raw) return 0;
   const value = parseFloat(raw);
   if (Number.isNaN(value) || value < 0) {
     throw new Error("Please enter a valid price.");
@@ -47,6 +48,22 @@ function parseTranslations(formData: FormData): Record<string, { title?: string;
   return out;
 }
 
+function parseTranslationModes(
+  formData: FormData,
+): Record<string, { title?: "auto" | "manual"; description?: "auto" | "manual" }> {
+  const out: Record<string, { title?: "auto" | "manual"; description?: "auto" | "manual" }> = {};
+  for (const [key, value] of formData.entries()) {
+    const match = /^translationModes\[([a-z]{2})\]\[(title|description)\]$/.exec(key);
+    if (!match) continue;
+    const [, lang, field] = match;
+    if (!isSupportedLanguage(lang)) continue;
+    if (value !== "auto" && value !== "manual") continue;
+    out[lang] ??= {};
+    out[lang][field as "title" | "description"] = value;
+  }
+  return out;
+}
+
 function sanitizeCrop(
   xRaw: string,
   yRaw: string,
@@ -77,13 +94,8 @@ function parseImageEntries(formData: FormData) {
     .filter((img) => img.url !== "");
 }
 
-async function deleteImageIfUnused(url: string, excludeProductId?: string) {
-  const references = await db.image.count({
-    where: {
-      url,
-      ...(excludeProductId ? { productId: { not: excludeProductId } } : {}),
-    },
-  });
+async function deleteImageIfUnused(url: string) {
+  const references = await db.image.count({ where: { url } });
   if (references === 0) {
     await deleteUploadFile(url);
   }
@@ -108,17 +120,30 @@ export async function createProduct(formData: FormData) {
     }
   }
 
-  const product = await db.product.create({
-    data: {
-      title,
-      priceCents,
-      description,
-      sourceLanguage,
-      tagId,
-      images: {
-        create: images.map((img, position) => ({ ...img, position })),
+  const product = await db.$transaction(async (tx) => {
+    const created = await tx.product.create({
+      data: {
+        priceCents,
+        sourceLanguage,
+        tagId,
+        images: {
+          create: images.map((img, position) => ({ ...img, position })),
+        },
       },
-    },
+    });
+
+    await tx.productTranslation.create({
+      data: {
+        productId: created.id,
+        language: sourceLanguage,
+        title,
+        description: description ?? "",
+        titleManual: true,
+        descriptionManual: true,
+      },
+    });
+
+    return created;
   });
 
   await autoTranslateChangedFields({
@@ -148,10 +173,20 @@ export async function updateProduct(formData: FormData) {
   const description = stripMarkup(String(formData.get("description") ?? "")).trim();
   const images = parseImageEntries(formData);
   const imageUrls = images.map((img) => img.url);
+  const tagId = String(formData.get("tagId") ?? "").trim() || null;
+  if (tagId) {
+    const tag = await db.tag.findUnique({
+      where: { id: tagId },
+      select: { id: true },
+    });
+    if (!tag) {
+      throw new Error("Selected tag no longer exists.");
+    }
+  }
 
   const existing = await db.product.findUnique({
     where: { id: productId },
-    include: { images: true, translations: true },
+    include: { images: true },
   });
 
   if (!existing) {
@@ -159,28 +194,57 @@ export async function updateProduct(formData: FormData) {
   }
 
   const sourceLanguage = parseSourceLanguage(formData.get("sourceLanguage"), existing.sourceLanguage as Language);
+  const rebase = sourceLanguage !== existing.sourceLanguage;
+
+  // The form loads its main fields from the (post-swap) source language's real
+  // row, so edits are detected against that row. A pure language swap only
+  // re-targets the form and flips the pointer — no translations are touched.
+  const currentSourceRow = await db.productTranslation.findUnique({
+    where: { productId_language: { productId, language: sourceLanguage } },
+  });
+  const titleEdited = title !== (currentSourceRow?.title ?? "");
+  const descriptionEdited = description !== (currentSourceRow?.description ?? "");
+  const lightSwap = rebase && !titleEdited && !descriptionEdited;
 
   const existingUrls = new Set(existing.images.map((img) => img.url));
   const keptUrls = new Set(imageUrls);
 
-  for (const image of existing.images) {
-    if (!keptUrls.has(image.url)) {
-      await deleteImageIfUnused(image.url, productId);
-    }
-  }
-  await db.image.deleteMany({
-    where: {
-      productId,
-      NOT: { url: { in: [...keptUrls] } },
-    },
-  });
-
   const cropByUrl = new Map(images.map((img) => [img.url, img]));
   const kept = existing.images.filter((img) => keptUrls.has(img.url));
   await db.$transaction([
+    db.image.deleteMany({
+      where: {
+        productId,
+        NOT: { url: { in: [...keptUrls] } },
+      },
+    }),
     db.product.update({
       where: { id: productId },
-      data: { title, sourceLanguage, priceCents, description },
+      data: { sourceLanguage, priceCents, tagId },
+    }),
+    // Following the source-language flip, the previously authored cell is
+    // protected: it shows as Manual so auto-translation never overwrites it.
+    ...(rebase
+      ? [
+          db.productTranslation.updateMany({
+            where: { productId, language: existing.sourceLanguage as Language },
+            data: { titleManual: true, descriptionManual: true },
+          }),
+        ]
+      : []),
+    db.productTranslation.upsert({
+      where: {
+        productId_language: { productId, language: sourceLanguage },
+      },
+      update: { title, description, titleManual: true, descriptionManual: true },
+      create: {
+        productId,
+        language: sourceLanguage,
+        title,
+        description: description ?? "",
+        titleManual: true,
+        descriptionManual: true,
+      },
     }),
     ...kept.map((image) => {
       const crop = cropByUrl.get(image.url);
@@ -212,88 +276,98 @@ export async function updateProduct(formData: FormData) {
       ),
   ]);
 
-  // If the source description was cleared, drop the now-stale translated
-  // descriptions so shoppers never see text for a field that no longer exists.
-  if (!description) {
-    await db.productTranslation.updateMany({
-      where: { productId, description: { not: "" } },
-      data: { description: "", descriptionManual: false },
-    });
-  }
-
-  const translations = parseTranslations(formData);
-
-  // Detect manual edits by comparing what the admin submitted against the
-  // stored values from before this round of auto-translation. Any field the
-  // admin changed here is treated as a manual override and wins over
-  // re-generated text.
-  const manualEdits: Record<string, { title?: boolean; description?: boolean }> = {};
-  for (const [lang, submitted] of Object.entries(translations)) {
-    const row = existing.translations.find((t) => t.language === lang);
-    const edits: { title?: boolean; description?: boolean } = {};
-    if (submitted.title !== undefined && submitted.title !== (row?.title ?? "")) {
-      edits.title = true;
-    }
-    if (
-      submitted.description !== undefined &&
-      submitted.description !== (row?.description ?? "")
-    ) {
-      edits.description = true;
-    }
-    if (Object.keys(edits).length > 0) {
-      manualEdits[lang] = edits;
+  // The dropped image rows are gone (committed above), so a reference count
+  // here can only see other products — unlink the file only when none exist.
+  // Running the unlink after commit keeps a failed save from ever producing a
+  // product that points at a deleted file.
+  for (const image of existing.images) {
+    if (!keptUrls.has(image.url)) {
+      await deleteImageIfUnused(image.url);
     }
   }
 
-  const sourceChanged = sourceLanguage !== existing.sourceLanguage;
-  const titleChanged = title !== existing.title;
-  const descriptionChanged = description !== existing.description;
-  const retranslateTitle = sourceChanged || titleChanged;
-  const retranslateDescription = sourceChanged || descriptionChanged;
-
-  // Best-effort automated translation: quota walls and errors never block the
-  // product save. Only per-field differences are sent to the API.
-  await autoTranslateChangedFields({
-    productId,
-    source: sourceLanguage,
-    fields: {
-      title: { text: title, changed: retranslateTitle },
-      description: description ? { text: description, changed: retranslateDescription } : null,
-    },
-    fillMissing: true,
-    manualEdits,
-  });
-
-  // Persist manual overrides for the fields the admin edited.
-  // Uses upsert keyed on the composite unique constraint so a row created by
-  // autoTranslateChangedFields in the same save is updated rather than
-  // duplicated (P2002 guard).
-  for (const [lang, edits] of Object.entries(manualEdits)) {
-    if (!isSupportedLanguage(lang)) continue;
-    const submitted = translations[lang]!;
-    const updateData: Record<string, unknown> = {};
-    if (edits.title !== undefined) {
-      updateData.title = submitted.title ?? "";
-      updateData.titleManual = true;
+  // A pure swap (language changed, nothing edited) only re-targets the form
+  // and flips the pointer — no API calls, no translation writes, no flag churn.
+  if (!lightSwap) {
+    // If the source description was cleared, drop the now-stale translated
+    // descriptions so shoppers never see text for a field that no longer
+    // exists. Manually authored translations are spared.
+    if (descriptionEdited && !description) {
+      await db.productTranslation.updateMany({
+        where: { productId, description: { not: "" }, descriptionManual: false },
+        data: { description: "", descriptionManual: false },
+      });
     }
-    if (edits.description !== undefined) {
-      updateData.description = submitted.description ?? "";
-      updateData.descriptionManual = true;
-    }
-    await db.productTranslation.upsert({
-      where: {
-        productId_language: { productId, language: lang },
+
+    const translations = parseTranslations(formData);
+    const modes = parseTranslationModes(formData);
+
+    // Best-effort automated translation: quota walls and errors never block the
+    // product save. Only fields whose source text actually changed are sent to
+    // the API, and only when their per-field toggle is "auto". Fields marked
+    // "manual" are left untouched.
+    await autoTranslateChangedFields({
+      productId,
+      source: sourceLanguage,
+      fields: {
+        title: { text: title, changed: titleEdited },
+        description: description ? { text: description, changed: descriptionEdited } : null,
       },
-      update: updateData,
-      create: {
-        productId,
-        language: lang,
-        title: edits.title !== undefined ? submitted.title ?? "" : "",
-        description: edits.description !== undefined ? submitted.description ?? "" : "",
-        titleManual: edits.title !== undefined,
-        descriptionManual: edits.description !== undefined,
-      },
+      fillMissing: true,
+      modes,
     });
+
+    // Persist manual overrides for fields whose toggle is "manual".
+    for (const [lang, fields] of Object.entries(modes)) {
+      if (!isSupportedLanguage(lang)) continue;
+      if (fields.title !== "manual" && fields.description !== "manual") continue;
+      const submitted = translations[lang];
+      const updateData: Record<string, unknown> = {
+        ...(fields.title === "manual"
+          ? { title: submitted?.title ?? "", titleManual: true }
+          : {}),
+        ...(fields.description === "manual"
+          ? { description: submitted?.description ?? "", descriptionManual: true }
+          : {}),
+      };
+      await db.productTranslation.upsert({
+        where: {
+          productId_language: { productId, language: lang },
+        },
+        update: updateData,
+        create: {
+          productId,
+          language: lang,
+          title: fields.title === "manual" ? submitted?.title ?? "" : "",
+          description: fields.description === "manual" ? submitted?.description ?? "" : "",
+          titleManual: fields.title === "manual",
+          descriptionManual: fields.description === "manual",
+        },
+      });
+    }
+
+    // Keep the stored manual flags in sync with the submitted toggles: a field
+    // flipped back to "auto" loses its manual flag immediately (without waiting
+    // for a translation), so the toggle stays as the user left it.
+    const titleAutoLangs = Object.entries(modes)
+      .filter(([, f]) => f.title === "auto")
+      .map(([lang]) => lang);
+    const descriptionAutoLangs = Object.entries(modes)
+      .filter(([, f]) => f.description === "auto")
+      .map(([lang]) => lang);
+
+    if (titleAutoLangs.length > 0) {
+      await db.productTranslation.updateMany({
+        where: { productId, language: { in: titleAutoLangs }, titleManual: true },
+        data: { titleManual: false },
+      });
+    }
+    if (descriptionAutoLangs.length > 0) {
+      await db.productTranslation.updateMany({
+        where: { productId, language: { in: descriptionAutoLangs }, descriptionManual: true },
+        data: { descriptionManual: false },
+      });
+    }
   }
 
   revalidatePath("/");
@@ -319,10 +393,13 @@ export async function deleteProduct(formData: FormData) {
     throw new Error("Product not found.");
   }
 
-  for (const image of product.images) {
-    await deleteImageIfUnused(image.url, productId);
-  }
+  const images = product.images;
   await db.product.delete({ where: { id: productId } });
+
+  // Product rows are gone, so the count below sees only other products.
+  for (const image of images) {
+    await deleteImageIfUnused(image.url);
+  }
 
   revalidatePath("/");
   revalidatePath("/admin");

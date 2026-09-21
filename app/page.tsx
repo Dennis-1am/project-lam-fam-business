@@ -8,6 +8,7 @@ import { TagFilter } from "@/components/tag-filter";
 import { getSession } from "@/lib/auth";
 import { CatalogLocationMemory } from "@/components/catalog-location-memory";
 import { CatalogHealthMessage, EmptyCatalogMessage, NoFilterResultsMessage } from "@/components/no-products-message";
+import { assembleProduct } from "@/lib/product-i18n";
 
 export const metadata = {
   title: "Catalog",
@@ -64,7 +65,7 @@ export default async function CatalogPage({
     : null;
 
   const hasMore = productsWithExtra.length > PAGE_SIZE;
-  const products = productsWithExtra.slice(0, PAGE_SIZE);
+  const products = productsWithExtra.slice(0, PAGE_SIZE).map(assembleProduct);
   const showHealth = isAdmin && untagged && total === 0 && catalogTotal > 0;
 
   function hrefFor(pageNum: number) {

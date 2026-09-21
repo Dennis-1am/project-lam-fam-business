@@ -13,6 +13,24 @@ export type LocalizableProduct = {
   translations?: ProductTranslationRow[];
 };
 
+// The canonical columns no longer exist — every language, including the
+// source, is a translation row. This re-attaches the source cell's text to the
+// product DTO so read paths (catalog page, API routes) keep working unchanged.
+export function assembleProduct<
+  TPipeline extends { sourceLanguage: string; translations?: ProductTranslationRow[] },
+>(
+  product: TPipeline,
+): TPipeline & { title: string; description: string | null } {
+  const row = product.translations?.find(
+    (t) => t.language === product.sourceLanguage,
+  );
+  return {
+    ...product,
+    title: row?.title ?? "",
+    description: row?.description ?? null,
+  };
+}
+
 export type ResolvedText = {
   title: string;
   description: string | null;

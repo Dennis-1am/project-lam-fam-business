@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { assembleProduct } from "@/lib/product-i18n";
 
 export async function GET(
   _request: Request,
@@ -19,5 +20,5 @@ export async function GET(
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
-  return Response.json(product);
+  return Response.json(assembleProduct(product));
 }

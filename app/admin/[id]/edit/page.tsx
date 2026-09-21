@@ -108,7 +108,7 @@ export default function EditProductPage({
         productId={product.id}
         initial={{
           title: product.title,
-          price: (product.priceCents / 100).toFixed(2),
+          price: product.priceCents > 0 ? (product.priceCents / 100).toFixed(2) : "",
           description: product.description ?? "",
           sourceLanguage: product.sourceLanguage as Language,
           translations: product.translations.map((t) => ({

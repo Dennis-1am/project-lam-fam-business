@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { assembleProduct } from "@/lib/product-i18n";
 
 const DEFAULT_PAGE_SIZE = 24;
 const MAX_PAGE_SIZE = 100;
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
   ]);
 
   return Response.json({
-    items,
+    items: items.map(assembleProduct),
     page,
     pageSize,
     total,

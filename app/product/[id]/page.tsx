@@ -114,9 +114,11 @@ export default function ProductPage({
               {product.tag.name}
             </span>
           )}
-          <p className="mt-2 text-2xl font-semibold text-neutral-800">
-            {formatPrice(product.priceCents)}
-          </p>
+          {product.priceCents > 0 && (
+            <p className="mt-2 text-2xl font-semibold text-neutral-800">
+              {formatPrice(product.priceCents)}
+            </p>
+          )}
           {localized.description && (
             <p
               className="mt-6 whitespace-pre-line leading-relaxed text-neutral-600"

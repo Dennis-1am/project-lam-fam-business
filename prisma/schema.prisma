@@ -9,8 +9,6 @@ datasource db {
 
 model Product {
   id             String               @id @default(cuid())
-  title          String
-  description    String               @default("")
   priceCents     Int                  @default(0)
   sourceLanguage String               @default("en")
   images         Image[]

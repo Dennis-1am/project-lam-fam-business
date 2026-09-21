@@ -16,12 +16,6 @@ function validateTagName(name: string): string {
   return trimmed;
 }
 
-function ensureProduct(productId: string) {
-  if (!productId) {
-    throw new Error("Missing product id.");
-  }
-}
-
 async function findCaseInsensitive(name: string) {
   const lower = name.toLowerCase();
   const tags = await db.tag.findMany({ select: { id: true, name: true } });
@@ -42,36 +36,6 @@ export async function createTag(name: string) {
   const tag = await getOrCreateTag(name);
 
   revalidatePath("/");
-
-  return { tagId: tag.id, name: tag.name };
-}
-
-export async function assignProductTag(productId: string, tagId: string | null) {
-  await requireAdmin();
-  ensureProduct(productId);
-
-  await db.product.update({
-    where: { id: productId },
-    data: { tagId },
-  });
-
-  revalidatePath("/");
-  revalidatePath(`/product/${productId}`);
-}
-
-export async function createTagAndAssign(productId: string, name: string) {
-  await requireAdmin();
-  ensureProduct(productId);
-
-  const tag = await getOrCreateTag(name);
-
-  await db.product.update({
-    where: { id: productId },
-    data: { tagId: tag.id },
-  });
-
-  revalidatePath("/");
-  revalidatePath(`/product/${productId}`);
 
   return { tagId: tag.id, name: tag.name };
 }

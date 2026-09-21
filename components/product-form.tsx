@@ -5,10 +5,10 @@ import { useState } from "react";
 import { ImageEditor } from "@/components/image-editor";
 import { cropBoxStyle, cropFromRecord, cropSourceSizes } from "@/lib/crop";
 import type { CropData, CroppableImage } from "@/lib/crop";
-import { useTranslation } from "@/lib/language-context";
+import { useLanguage, useTranslation } from "@/lib/language-context";
 import { TagSelector } from "@/components/tag-selector";
 import { DeleteButton } from "@/components/delete-button";
-import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES, targetLanguages } from "@/lib/languages";
+import { LANGUAGE_LABELS, targetLanguages } from "@/lib/languages";
 import type { Language } from "@/lib/translations";
 
 export type TranslationEntry = {
@@ -37,6 +37,129 @@ type ProductFormProps = {
 
 type PendingImage = { url: string; uploading: boolean; crop?: CropData };
 
+function FieldModeToggle({
+  name,
+  valueManual,
+  manualLabel,
+  autoLabel,
+  onChange,
+}: {
+  name: string;
+  valueManual: boolean;
+  manualLabel: string;
+  autoLabel: string;
+  onChange: (manual: boolean) => void;
+}) {
+  function segmentButton(isManual: boolean) {
+    const active = valueManual === isManual;
+    const visible = isManual ? manualLabel : autoLabel;
+    const invisible = isManual ? autoLabel : manualLabel;
+    return (
+      <button
+        type="button"
+        onClick={() => onChange(isManual)}
+        className="relative z-10 grid place-items-center px-2 py-1 text-[10px] font-medium leading-none"
+      >
+        <span
+          className={`col-start-1 row-start-1 whitespace-nowrap transition-colors ${
+            active ? "text-white" : "text-neutral-500"
+          }`}
+        >
+          {visible}
+        </span>
+        <span className="invisible col-start-1 row-start-1 whitespace-nowrap">
+          {invisible}
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <span className="relative inline-grid grid-cols-2 overflow-hidden rounded bg-neutral-100">
+      <span
+        className={`absolute inset-y-0 w-1/2 rounded bg-neutral-800 transition-[left] ${
+          valueManual ? "left-0" : "left-1/2"
+        }`}
+      />
+      {segmentButton(true)}
+      {segmentButton(false)}
+      <input
+        type="radio"
+        name={name}
+        value="manual"
+        checked={valueManual}
+        onChange={() => onChange(true)}
+        className="sr-only"
+      />
+      <input
+        type="radio"
+        name={name}
+        value="auto"
+        checked={!valueManual}
+        onChange={() => onChange(false)}
+        className="sr-only"
+      />
+    </span>
+  );
+}
+
+function MainLocalizedField({
+  label,
+  name,
+  initialValue,
+  showEdited,
+  required,
+  multiline,
+}: {
+  label: string;
+  name: string;
+  initialValue: string;
+  showEdited: boolean;
+  required?: boolean;
+  multiline?: boolean;
+}) {
+  const t = useTranslation();
+  const [value, setValue] = useState(initialValue);
+  const edited = showEdited && value !== initialValue;
+  const inputId = `main-${name}`;
+  const inputClasses =
+    "w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-900 focus:outline-none";
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <label htmlFor={inputId} className="text-sm font-medium text-neutral-700">
+          {label}
+        </label>
+        {edited && (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-800">
+            {t("edited")}
+          </span>
+        )}
+      </div>
+      {multiline ? (
+        <textarea
+          id={inputId}
+          name={name}
+          rows={5}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className={inputClasses}
+        />
+      ) : (
+        <input
+          id={inputId}
+          name={name}
+          type="text"
+          required={required}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className={inputClasses}
+        />
+      )}
+    </div>
+  );
+}
+
 export function ProductForm({
   action,
   submitLabel,
@@ -44,8 +167,18 @@ export function ProductForm({
   productId,
 }: ProductFormProps) {
   const t = useTranslation();
-  const [sourceLanguage, setSourceLanguage] = useState<Language>(
-    initial?.sourceLanguage ?? "en",
+  const { language } = useLanguage();
+  const initialManualTitle: Record<string, boolean> = {};
+  const initialManualDescription: Record<string, boolean> = {};
+  for (const entry of initial?.translations ?? []) {
+    if (entry.titleManual) initialManualTitle[entry.language] = true;
+    if (entry.descriptionManual) initialManualDescription[entry.language] = true;
+  }
+  const [manualTitle, setManualTitle] = useState<Record<string, boolean>>(
+    initialManualTitle,
+  );
+  const [manualDescription, setManualDescription] = useState<Record<string, boolean>>(
+    initialManualDescription,
   );
   const [images, setImages] = useState<PendingImage[]>(
     initial?.images.map((img) => ({
@@ -61,7 +194,13 @@ export function ProductForm({
   const translationsByLang = new Map(
     (initial?.translations ?? []).map((entry) => [entry.language, entry]),
   );
-  const translationLanguages = targetLanguages(sourceLanguage);
+  const translationLanguages = targetLanguages(language);
+
+  // The main title/description follow the app language. Every language is a
+  // real translation row now, so the loaded text is simply that cell's.
+  const mainCell = translationsByLang.get(language);
+  const mainTitleInitial = mainCell?.title ?? "";
+  const mainDescriptionInitial = mainCell?.description ?? "";
 
   function handleFiles(fileList: FileList | null) {
     if (!fileList) return;
@@ -103,69 +242,47 @@ export function ProductForm({
   return (
     <form action={action} className="mx-auto max-w-2xl space-y-6">
       {productId && <input type="hidden" name="id" value={productId} />}
+      <input type="hidden" name="sourceLanguage" value={language} />
 
-      <div>
-        <label htmlFor="sourceLanguage" className="mb-1 block text-sm font-medium text-neutral-700">
-          {t("sourceLanguage")}
-        </label>
-        <select
-          id="sourceLanguage"
-          name="sourceLanguage"
-          value={sourceLanguage}
-          onChange={(e) => setSourceLanguage(e.target.value as Language)}
-          className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 focus:border-neutral-900 focus:outline-none"
-        >
-          {SUPPORTED_LANGUAGES.map((lang) => (
-            <option key={lang} value={lang}>
-              {LANGUAGE_LABELS[lang]}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="title" className="mb-1 block text-sm font-medium text-neutral-700">
-          {t("title")}
-        </label>
-        <input
-          id="title"
+      <div key={language} className="grid gap-4">
+        <MainLocalizedField
+          label={t("title")}
           name="title"
-          type="text"
           required
-          defaultValue={initial?.title}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-900 focus:outline-none"
+          showEdited={Boolean(initial)}
+          initialValue={mainTitleInitial}
+        />
+        <MainLocalizedField
+          label={t("description")}
+          name="description"
+          multiline
+          showEdited={Boolean(initial)}
+          initialValue={mainDescriptionInitial}
         />
       </div>
 
-      <div>
-        <label htmlFor="price" className="mb-1 block text-sm font-medium text-neutral-700">
-          {t("price")}
-        </label>
-        <div className="flex max-w-48 items-center rounded-lg border border-neutral-300 focus-within:border-neutral-900">
-          <span className="pl-3 text-neutral-500">$</span>
-          <input
-            id="price"
-            name="price"
-            type="number"
-            min="0"
-            step="0.01"
-            required
-            defaultValue={initial?.price}
-            className="w-full bg-transparent py-2 pr-3 focus:outline-none"
-          />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="price" className="mb-1 block text-sm font-medium text-neutral-700">
+            {t("price")}
+          </label>
+          <div className="flex items-center rounded-lg border border-neutral-300 focus-within:border-neutral-900">
+            <span className="pl-3 text-neutral-500">$</span>
+            <input
+              id="price"
+              name="price"
+              type="number"
+              min="0"
+              step="0.01"
+              defaultValue={initial?.price}
+              className="w-full bg-transparent py-2 pr-3 focus:outline-none"
+            />
+          </div>
         </div>
-      </div>
 
-      <div>
-        <label htmlFor="description" className="mb-1 block text-sm font-medium text-neutral-700">
-          {t("description")}
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          rows={5}
-          defaultValue={initial?.description}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-900 focus:outline-none"
+        <TagSelector
+          initialTagId={initial?.tagId ?? null}
+          initialTagName={initial?.tagName ?? null}
         />
       </div>
 
@@ -200,36 +317,54 @@ export function ProductForm({
 
                 <div className="space-y-3">
                   <div>
-                    <div className="mb-1 flex items-center gap-2">
+                    <div className="mb-1 flex items-center justify-between gap-2">
                       <label htmlFor={`translation-${lang}-title`} className="text-sm font-medium text-neutral-700">
                         {t("title")}
                       </label>
-                      <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-                        {entry?.titleManual ? t("manualLabel") : t("autoLabel")}
-                      </span>
+                      <FieldModeToggle
+                        name={`translationModes[${lang}][title]`}
+                        valueManual={manualTitle[lang] ?? false}
+                        manualLabel={t("manuallyEdited")}
+                        autoLabel={t("autoTranslate")}
+                        onChange={(manual) =>
+                          setManualTitle((prev) => ({ ...prev, [lang]: manual }))
+                        }
+                      />
                     </div>
                     <input
                       id={`translation-${lang}-title`}
                       name={`translations[${lang}][title]`}
                       type="text"
                       defaultValue={entry?.title ?? ""}
+                      onChange={() =>
+                        setManualTitle((prev) => ({ ...prev, [lang]: true }))
+                      }
                       className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-900 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <div className="mb-1 flex items-center gap-2">
+                    <div className="mb-1 flex items-center justify-between gap-2">
                       <label htmlFor={`translation-${lang}-description`} className="text-sm font-medium text-neutral-700">
                         {t("description")}
                       </label>
-                      <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-                        {entry?.descriptionManual ? t("manualLabel") : t("autoLabel")}
-                      </span>
+                      <FieldModeToggle
+                        name={`translationModes[${lang}][description]`}
+                        valueManual={manualDescription[lang] ?? false}
+                        manualLabel={t("manuallyEdited")}
+                        autoLabel={t("autoTranslate")}
+                        onChange={(manual) =>
+                          setManualDescription((prev) => ({ ...prev, [lang]: manual }))
+                        }
+                      />
                     </div>
                     <textarea
                       id={`translation-${lang}-description`}
                       name={`translations[${lang}][description]`}
                       rows={3}
                       defaultValue={entry?.description ?? ""}
+                      onChange={() =>
+                        setManualDescription((prev) => ({ ...prev, [lang]: true }))
+                      }
                       className="w-full rounded-lg border border-neutral-300 px-3 py-2 focus:border-neutral-900 focus:outline-none"
                     />
                   </div>
@@ -239,12 +374,6 @@ export function ProductForm({
           })}
         </div>
       )}
-
-      <TagSelector
-        productId={productId}
-        initialTagId={initial?.tagId ?? null}
-        initialTagName={initial?.tagName ?? null}
-      />
 
       <div>
         <span className="mb-1 block text-sm font-medium text-neutral-700">{t("images")}</span>

@@ -3,25 +3,18 @@
 import { useEffect, useRef, useState, startTransition } from "react";
 import { useTranslation } from "@/lib/language-context";
 import { TAG_NAME_MAX_LENGTH } from "@/lib/tags";
-import {
-  assignProductTag,
-  createTag,
-  createTagAndAssign,
-  deleteTag,
-} from "@/app/tag-actions";
+import { createTag, deleteTag } from "@/app/tag-actions";
 import { ConfirmDialog } from "./confirm-dialog";
 import { DeleteButton } from "./delete-button";
 
 type Tag = { id: string; name: string };
 
 type TagSelectorProps = {
-  productId?: string;
   initialTagId?: string | null;
   initialTagName?: string | null;
 };
 
 export function TagSelector({
-  productId,
   initialTagId = null,
   initialTagName = null,
 }: TagSelectorProps) {
@@ -86,23 +79,8 @@ export function TagSelector({
   function selectTag(tag: Tag | null) {
     if (busy) return;
     setError(null);
-    if (!productId) {
-      setSelected(tag);
-      setOpen(false);
-      return;
-    }
-    const prev = selected;
     setSelected(tag);
     setOpen(false);
-    setBusy(true);
-    startTransition(() => {
-      assignProductTag(productId, tag?.id ?? null)
-        .catch((err: Error) => {
-          setSelected(prev);
-          setError(err.message);
-        })
-        .finally(() => setBusy(false));
-    });
   }
 
   function removeTag(tag: Tag) {
@@ -145,7 +123,7 @@ export function TagSelector({
     setAdding(false);
     setInputValue("");
     setBusy(true);
-    const request = productId ? createTagAndAssign(productId, name) : createTag(name);
+    const request = createTag(name);
     startTransition(() => {
       request
         .then((created) => {
@@ -205,9 +183,7 @@ export function TagSelector({
 
   return (
     <div ref={rootRef} className="relative">
-      {!productId && (
-        <input type="hidden" name="tagId" value={selected?.id ?? ""} />
-      )}
+      <input type="hidden" name="tagId" value={selected?.id ?? ""} />
       <span className="mb-1 block text-sm font-medium text-neutral-700">
         {t("tag")}
       </span>

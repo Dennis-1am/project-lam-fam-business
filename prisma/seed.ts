@@ -232,16 +232,23 @@ async function main() {
     }
 
     const tagName = tagNameForIndex(i);
+    const description = `A sample listing for "${sample.title}". Swapped in by the seed script — replace the details and images with real inventory before going live.`;
 
     await prisma.product.create({
       data: {
-        title: sample.title,
-        description:
-          `A sample listing for "${sample.title}". Swapped in by the seed script — replace the details and images with real inventory before going live.`,
         priceCents: 1500 + Math.floor(Math.random() * 8500),
         tagId: tagName ? tagIds[tagName] : null,
         images: {
           create: urls.map((url, index) => ({ url, position: index })),
+        },
+        translations: {
+          create: {
+            language: "en",
+            title: sample.title,
+            description,
+            titleManual: true,
+            descriptionManual: true,
+          },
         },
       },
     });
