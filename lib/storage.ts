@@ -2,7 +2,7 @@ import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
+export const UPLOADS_DIR = path.join(process.cwd(), "data", "uploads");
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const ALLOWED_TYPES = new Set([
@@ -35,12 +35,12 @@ export async function saveUpload(file: File): Promise<string> {
   await mkdir(UPLOADS_DIR, { recursive: true });
   await writeFile(path.join(UPLOADS_DIR, filename), Buffer.from(await file.arrayBuffer()));
 
-  return `/uploads/${filename}`;
+  return `/api/images/${filename}`;
 }
 
 export async function deleteUploadFile(url: string): Promise<void> {
-  if (!url.startsWith("/uploads/")) return;
-  const filename = url.replace("/uploads/", "");
+  if (!url.startsWith("/api/images/")) return;
+  const filename = url.replace("/api/images/", "");
   if (filename.includes("/") || filename.includes("..")) return;
 
   try {

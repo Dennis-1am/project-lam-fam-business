@@ -43,6 +43,7 @@ yarn-error.log*
 prisma/dev.db*
 prisma/prod.db*
 public/uploads/
+/data/
 
 # typescript
 *.tsbuildinfo

@@ -28,7 +28,7 @@ Development needs no `.env` file — the committed `.env.development` (dev datab
 | `/admin` | List products; create, edit, and delete them. |
 | `/admin/new` | Create a product: title, price, description, and upload multiple images for one listing. |
 | `/admin/[id]/edit` | Edit price/description, add or remove images. |
-| `/api/upload` | Image upload endpoint (admin-only, validates type/size). Files are saved under `public/uploads/`. |
+| `/api/upload` | Image upload endpoint (admin-only, validates type/size). Files are saved under `data/uploads/` and served via `/api/images/[name]`. |
 
 ## Data model
 
@@ -86,6 +86,7 @@ Everything lives in `.env` (production) and `.env.development` (dev):
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Admin sign-in credentials |
 | `AUTH_SECRET` | Used to sign session cookies |
 | `GOOGLE_CLOUD_TRANSLATE_API_KEY` | API key for Google Cloud Translation (Basic/v2). Leave as a placeholder in dev to avoid spending the free daily quota. |
+| `TRANSLATE_REFERER` | HTTP referer sent with translation requests; must match the website restriction configured on the API key (e.g. `https://lamfamily.duckdns.org/`). |
 | `TRANSLATE_DAILY_LIMIT` | Soft daily character cap for translations (defaults to 16,000) |
 
 ## Product translations
