@@ -11,6 +11,7 @@ model Product {
   id             String               @id @default(cuid())
   priceCents     Int                  @default(0)
   sourceLanguage String               @default("en")
+  hidden         Boolean              @default(false)
   images         Image[]
   tagId          String?
   tag            Tag?                 @relation(fields: [tagId], references: [id], onDelete: SetNull)

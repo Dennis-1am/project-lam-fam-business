@@ -43,6 +43,10 @@ export default async function ProductPage({ params }: Props) {
     notFound();
   }
 
+  if (productRow.hidden) {
+    notFound();
+  }
+
   const product = assembleProduct(productRow);
   const localized = resolveLocalizedText(product, language);
   const titleLangAttr =

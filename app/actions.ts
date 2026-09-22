@@ -378,6 +378,34 @@ export async function updateProduct(formData: FormData) {
   redirect(`/admin/${productId}/edit`);
 }
 
+export async function toggleProductHidden(formData: FormData) {
+  await requireAdmin();
+
+  const productId = String(formData.get("id") ?? "");
+  const hidden = formData.get("hidden") === "true";
+  if (!productId) {
+    throw new Error("Missing product id.");
+  }
+
+  const existing = await db.product.findUnique({
+    where: { id: productId },
+    select: { id: true },
+  });
+  if (!existing) {
+    throw new Error("Product not found.");
+  }
+
+  await db.product.update({
+    where: { id: productId },
+    data: { hidden },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/product/[id]", "page");
+  revalidateTag("products", "max");
+}
+
 export async function deleteProduct(formData: FormData) {
   await requireAdmin();
 

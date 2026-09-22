@@ -49,20 +49,31 @@ const getCatalogData = unstable_cache(
     rawPage,
     tagId,
     untagged,
+    includeHidden,
+    hiddenOnly,
   }: {
     rawPage: number;
     tagId: string | null;
     untagged: boolean;
+    includeHidden: boolean;
+    hiddenOnly: boolean;
   }): Promise<CatalogResult> => {
-    const where: Prisma.ProductWhereInput = untagged
+    const baseWhere: Prisma.ProductWhereInput = untagged
       ? { tagId: null }
       : tagId
         ? { tagId }
         : {};
+    const where: Prisma.ProductWhereInput = hiddenOnly
+      ? { hidden: true }
+      : includeHidden
+        ? baseWhere
+        : { ...baseWhere, hidden: false };
 
     const [total, catalogTotal] = await Promise.all([
       db.product.count({ where }),
-      db.product.count(),
+      db.product.count(
+        includeHidden ? undefined : { where: { hidden: false } },
+      ),
     ]);
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     const page = Math.max(1, Math.min(rawPage, totalPages));
@@ -103,24 +114,44 @@ const getCatalogData = unstable_cache(
 export default async function CatalogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; tag?: string; untagged?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    tag?: string;
+    untagged?: string;
+    hidden?: string;
+  }>;
 }) {
-  const { page: pageParam, tag: tagParam, untagged: untaggedParam } =
-    await searchParams;
+  const {
+    page: pageParam,
+    tag: tagParam,
+    untagged: untaggedParam,
+    hidden: hiddenParam,
+  } = await searchParams;
   const rawPage = /^\d+$/.test(pageParam ?? "") ? Number(pageParam) : 1;
 
   const isAdmin = await getSession();
   const untagged = isAdmin && untaggedParam === "1";
-  const tagId = !untagged && tagParam ? tagParam : null;
+  const hiddenOnly = isAdmin && hiddenParam === "1";
+  const tagId = !untagged && !hiddenOnly && tagParam ? tagParam : null;
 
   const { total, totalPages, catalogTotal, products, activeTag, hasMore } =
-    await getCatalogData({ rawPage, tagId, untagged });
+    await getCatalogData({
+      rawPage,
+      tagId,
+      untagged,
+      includeHidden: isAdmin,
+      hiddenOnly,
+    });
   const page = Math.max(1, Math.min(rawPage, totalPages));
   const showHealth = isAdmin && untagged && total === 0 && catalogTotal > 0;
+  const hiddenCount = isAdmin
+    ? await db.product.count({ where: { hidden: true } })
+    : 0;
 
   function hrefFor(pageNum: number) {
     const search = new URLSearchParams();
-    if (untagged) search.set("untagged", "1");
+    if (hiddenOnly) search.set("hidden", "1");
+    else if (untagged) search.set("untagged", "1");
     else if (tagId) search.set("tag", tagId);
     if (pageNum > 1) search.set("page", String(pageNum));
     const qs = search.toString();
@@ -149,8 +180,22 @@ export default async function CatalogPage({
       <TagFilter
         activeTag={tagId ? activeTag : null}
         untagged={untagged}
+        hiddenOnly={hiddenOnly}
         isAdmin={isAdmin}
+        hiddenCount={hiddenCount}
       />
+
+      {isAdmin && !hiddenOnly && hiddenCount > 0 && (
+        <Link
+          href="/?hidden=1"
+          className="mb-8 flex items-center gap-2 rounded-lg border border-neutral-200 bg-amber-50 px-4 py-3 text-sm text-neutral-800 transition hover:border-amber-500"
+        >
+          <span>
+            {hiddenCount} hidden product{hiddenCount === 1 ? "" : "s"} exist —
+            click here to view and relist them.
+          </span>
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {isAdmin && page === 1 && <AddProductTile />}
@@ -165,6 +210,7 @@ export default async function CatalogPage({
             sourceLanguage={product.sourceLanguage}
             translations={product.translations}
             isAdmin={isAdmin}
+            hidden={product.hidden}
             priority={page === 1 && index === 0}
           />
         ))}
