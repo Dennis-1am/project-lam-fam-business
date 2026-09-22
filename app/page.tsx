@@ -165,7 +165,7 @@ export default async function CatalogPage({
       </Suspense>
       <section className="pb-10 pt-6">
         <p className="text-sm font-medium uppercase tracking-widest text-neutral-400">
-          Family wholesale · Since 2010
+          Wholesale since 2008
         </p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight">
           Welcome to our shop
