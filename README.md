@@ -86,7 +86,7 @@ Everything lives in `.env` (production) and `.env.development` (dev):
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Admin sign-in credentials |
 | `AUTH_SECRET` | Used to sign session cookies |
 | `GOOGLE_CLOUD_TRANSLATE_API_KEY` | API key for Google Cloud Translation (Basic/v2). Leave as a placeholder in dev to avoid spending the free daily quota. |
-| `TRANSLATE_REFERER` | HTTP referer sent with translation requests; must match the website restriction configured on the API key (e.g. `https://lamfamily.duckdns.org/`). |
+| `TRANSLATE_REFERER` | HTTP referer sent with translation requests; must match the website restriction configured on the API key (e.g. `https://elife-trending.duckdns.org/`). |
 | `TRANSLATE_DAILY_LIMIT` | Soft daily character cap for translations (defaults to 16,000) |
 
 ## Product translations
