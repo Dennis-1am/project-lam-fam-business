@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useEffect, useRef, useState } from "react";
+
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 import { cropBoxStyle, cropFromRecord, imageAspectOf } from "@/lib/crop";
 import type { CroppableImage } from "@/lib/crop";
 
@@ -48,7 +50,7 @@ function AspectBox({
   const ref = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const parent = ref.current?.parentElement;
     if (!parent) return;
     const compute = () => {

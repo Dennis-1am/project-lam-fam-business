@@ -42,7 +42,7 @@ npm run dev          # start dev server (uses prisma/dev.db)
 npm run build        # production build
 npm run start        # run production build
 npm run lint         # eslint
-npm run db:seed      # top up sample products/tags against the DEV db (safe: skips if 75+ exist)
+npm run db:seed      # top up sample products/tags + Shape Demo products against the DEV db (safe: skips if 75+ products exist)
 npm run db:reset     # DEV ONLY: drop DEV db, re-migrate, re-seed (wipes the DEV database)
 npm run db:migrate   # DEV ONLY: create/apply migrations against the DEV database
 npm run db:deploy    # apply migrations to the PRODUCTION database (what scripts/deploy.sh runs)

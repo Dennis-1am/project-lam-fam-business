@@ -14,7 +14,7 @@
     "db:snapshot": "cp prisma/prod.db prisma/dev.db"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts && tsx prisma/seed-shapes.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
