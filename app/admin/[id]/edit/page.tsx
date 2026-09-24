@@ -76,6 +76,9 @@ export default async function EditProductPage({
             cropY: img.cropY,
             cropWidth: img.cropWidth,
             cropHeight: img.cropHeight,
+            cropAspect: img.cropAspect,
+            imageWidth: img.imageWidth,
+            imageHeight: img.imageHeight,
           })),
         }}
       />
