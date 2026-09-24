@@ -65,3 +65,11 @@ export function cropSourceSizes(crop: CropData, mobileVw: number, desktopVw: num
   const scale = 100 / crop.width;
   return `(min-width: 768px) ${Math.ceil(desktopVw * scale)}vw, ${Math.ceil(mobileVw * scale)}vw`;
 }
+
+export function imageAspectOf(image: CroppableImage): number | null {
+  const { imageWidth, imageHeight } = image;
+  if (typeof imageWidth === "number" && imageWidth > 0 && typeof imageHeight === "number" && imageHeight > 0) {
+    return imageWidth / imageHeight;
+  }
+  return null;
+}

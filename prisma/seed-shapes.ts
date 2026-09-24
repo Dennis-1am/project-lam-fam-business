@@ -131,7 +131,7 @@ async function main() {
 
   await createDemo(
     `${DEMO_PREFIX} — No Crop (full image)`,
-    "Same product, many shapes. No crop set, so every image shows in full — catalog cards and the gallery letterbox (object-contain) each image into the square tile.",
+    "Same product, many shapes. No crop set, so every image shows in full — catalog cards letterbox each image into the square tile; the gallery stage, thumbnails, and lightbox show each image in a box at its natural proportion.",
     [
       { ...landscape },
       { ...portrait },
@@ -143,7 +143,7 @@ async function main() {
 
   await createDemo(
     `${DEMO_PREFIX} — Cropped 4:3`,
-    "Free-form crop: a 4:3 frame carved out of a 3:2 photo. Crops are ignored on the storefront — the full image is shown letterboxed in the square tile. The crop frame only affects the admin crop editor preview.",
+    "Free-form crop: a 4:3 frame carved out of a 3:2 photo. Catalog cards zoom-fill the square tile with the crop; the gallery stage, thumbnails, and lightbox show the crop in a 4:3 box.",
     [
       { ...landscape, crop: CROP_4_3 },
       { ...portrait },
@@ -152,7 +152,7 @@ async function main() {
 
   await createDemo(
     `${DEMO_PREFIX} — Cropped Square`,
-    "A centred square crop carved out of a 3:2 photo. Like all crops it doesn't affect storefront display, which shows the full image letterboxed into the square tile.",
+    "A centred square crop carved out of a 3:2 photo. Catalog cards zoom-fill the square with the crop; the gallery stage, thumbnails, and lightbox show the square crop filling the tile exactly.",
     [
       { ...landscape, crop: CROP_1_1 },
       { ...landscape43 },
@@ -162,7 +162,7 @@ async function main() {
 
   await createDemo(
     `${DEMO_PREFIX} — Panorama`,
-    "An extreme 2.5:1 image, uncropped. The gallery tile is square, so the panorama letterboxes within it, just like the catalog card.",
+    "An extreme 2.5:1 image, uncropped. The catalog card letterboxes it into its square tile; the gallery stage, thumbnails, and lightbox show it in a wide box.",
     [
       { ...pano },
       { ...tall },

@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect } from "react";
 import type { CroppableImage } from "@/lib/crop";
 import { useTranslation } from "@/lib/language-context";
 import { useScrollCarousel } from "@/lib/use-scroll-carousel";
+import { CroppedImage } from "./cropped-image";
 
 export type GalleryImage = CroppableImage & { id: string };
 
@@ -91,13 +91,12 @@ export function ImageCarousel({ images, startIndex, onClose }: ImageCarouselProp
             aria-label={`${t("productImage")} ${index + 1}`}
             className="relative h-full w-full shrink-0 snap-start"
           >
-            <Image
-              src={image.url}
+            <CroppedImage
+              image={image}
               alt={`${t("productImage")} ${index + 1}`}
-              fill
-              priority={index === 0}
               sizes="100vw"
-              className="object-contain"
+              priority={index === startIndex}
+              layout="box"
             />
           </div>
         ))}
@@ -127,13 +126,7 @@ export function ImageCarousel({ images, startIndex, onClose }: ImageCarouselProp
                   : "border-transparent opacity-60 hover:opacity-100"
               }`}
             >
-              <Image
-                src={thumb.url}
-                alt=""
-                fill
-                sizes="56px"
-                className="object-contain"
-              />
+              <CroppedImage image={thumb} alt="" sizes="56px" layout="box" />
             </button>
           ))}
         </div>

@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { formatPrice } from "@/lib/site";
+import { cropFromRecord, cropSourceSizes } from "@/lib/crop";
 import type { CroppableImage } from "@/lib/crop";
 import { useLanguage, useTranslation } from "@/lib/language-context";
 import { deleteProduct, toggleProductHidden } from "@/app/actions";
 import { resolveLocalizedText } from "@/lib/product-i18n";
 import type { ProductTranslationRow } from "@/lib/product-i18n";
 import { ConfirmDialog } from "./confirm-dialog";
+import { CroppedImage } from "./cropped-image";
 import { DeleteButton } from "./delete-button";
 
 function EyeIcon({ off = false }: { off?: boolean }) {
@@ -69,6 +70,7 @@ export function ProductCard({
   const t = useTranslation();
   const { language } = useLanguage();
   const cover = images[0];
+  const coverCrop = cropFromRecord(cover ?? {});
 
   const localized = resolveLocalizedText(
     { title, description: null, sourceLanguage, translations },
@@ -85,13 +87,16 @@ export function ProductCard({
       <Link href={href} className="group block">
       <div className={`relative aspect-square overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 ${isHidden ? "opacity-60" : ""}`}>
         {cover ? (
-          <Image
-            src={cover.url}
+          <CroppedImage
+            image={cover}
             alt={localized.title}
-            fill
-            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+            sizes={
+              coverCrop
+                ? cropSourceSizes(coverCrop, 50, 25)
+                : "(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+            }
             priority={priority}
-            className="object-contain transition-[transform] duration-300 group-hover:[transform:scale(1.05)]"
+            className="transition-[transform] duration-300 group-hover:[transform:scale(1.05)]"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">

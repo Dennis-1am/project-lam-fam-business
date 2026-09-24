@@ -274,7 +274,14 @@ export function ProductForm({
   }
 
   function applyCrop(index: number, crop: CropData) {
-    setImages((prev) => prev.map((img, i) => (i === index ? { ...img, crop } : img)));
+    const isFullImage =
+      Math.abs(crop.x) < 0.5 &&
+      Math.abs(crop.y) < 0.5 &&
+      crop.width > 99.5 &&
+      crop.height > 99.5;
+    setImages((prev) =>
+      prev.map((img, i) => (i === index ? { ...img, crop: isFullImage ? undefined : crop } : img)),
+    );
     setEditorIndex(null);
   }
 

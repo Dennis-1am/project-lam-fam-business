@@ -15,25 +15,6 @@ type ImageEditorProps = {
 
 const FULL_IMAGE: PercentCrop = { x: 0, y: 0, width: 100, height: 100, unit: "%" };
 
-function centeredSquareCrop(imageWidth: number, imageHeight: number): PercentCrop {
-  if (imageWidth >= imageHeight) {
-    return {
-      unit: "%",
-      x: ((imageWidth - imageHeight) / 2 / imageWidth) * 100,
-      y: 0,
-      width: (imageHeight / imageWidth) * 100,
-      height: 100,
-    };
-  }
-  return {
-    unit: "%",
-    x: 0,
-    y: ((imageHeight - imageWidth) / 2 / imageHeight) * 100,
-    width: 100,
-    height: (imageWidth / imageHeight) * 100,
-  };
-}
-
 export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEditorProps) {
   const t = useTranslation();
   const initialCrop: PercentCrop | null = initial
@@ -47,9 +28,8 @@ export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEdito
     const img = event.currentTarget;
     if (!(img.naturalWidth > 0 && img.naturalHeight > 0)) return;
     setNatural({ width: img.naturalWidth, height: img.naturalHeight });
-    const square = centeredSquareCrop(img.naturalWidth, img.naturalHeight);
-    setCrop((prev) => prev ?? square);
-    setLastCompleted((prev) => prev ?? square);
+    setCrop((prev) => prev ?? FULL_IMAGE);
+    setLastCompleted((prev) => prev ?? FULL_IMAGE);
   }, []);
 
   const handleFitImage = () => {
@@ -58,7 +38,7 @@ export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEdito
   };
 
   const handleApply = () => {
-    const completed = lastCompleted ?? crop;
+    const completed = crop ?? lastCompleted;
     if (!completed || !natural) return;
     const rawAspect = (completed.width / 100) * natural.width / ((completed.height / 100) * natural.height);
     const aspect = Math.min(10, Math.max(0.1, rawAspect));

@@ -1,11 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { ImageCarousel } from "@/components/image-carousel";
 import type { GalleryImage } from "@/components/image-carousel";
+import { cropFromRecord, cropSourceSizes } from "@/lib/crop";
 import { useTranslation } from "@/lib/language-context";
 import { useScrollCarousel } from "@/lib/use-scroll-carousel";
+import { CroppedImage } from "./cropped-image";
 
 export type { GalleryImage };
 
@@ -51,24 +52,30 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
         aria-label={t("productImage")}
         className="relative flex aspect-square w-full cursor-zoom-in overflow-x-auto overflow-y-hidden rounded-xl border border-neutral-200 bg-neutral-100 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {images.map((image, index) => (
-          <button
-            key={image.id}
-            type="button"
-            onClick={() => setCarouselOpen(true)}
-            aria-label={`${t("productImage")} ${index + 1}`}
-            className="relative h-full w-full shrink-0 snap-start"
-          >
-            <Image
-              src={image.url}
-              alt={`${t("productImage")} ${index + 1}`}
-              fill
-              priority={index === 0}
-              sizes="(min-width: 768px) 50vw, 100vw"
-              className="object-contain"
-            />
-          </button>
-        ))}
+        {images.map((image, index) => {
+          const crop = cropFromRecord(image);
+          return (
+            <button
+              key={image.id}
+              type="button"
+              onClick={() => setCarouselOpen(true)}
+              aria-label={`${t("productImage")} ${index + 1}`}
+              className="relative h-full w-full shrink-0 snap-start"
+            >
+              <CroppedImage
+                image={image}
+                alt={`${t("productImage")} ${index + 1}`}
+                sizes={
+                  crop
+                    ? cropSourceSizes(crop, 100, 50)
+                    : "(min-width: 768px) 50vw, 100vw"
+                }
+                priority={index === 0}
+                layout="box"
+              />
+            </button>
+          );
+        })}
 
         <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-white/80 p-2 text-neutral-700 shadow-sm">
           <ExpandIcon />
@@ -84,19 +91,13 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
               onClick={() => scrollTo(index)}
               aria-label={t("jumpToImage")}
               aria-current={index === active}
-              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border transition ${
+              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border bg-neutral-100 transition ${
                 index === active
                   ? "border-neutral-900"
                   : "border-neutral-200 opacity-70 hover:opacity-100"
               }`}
             >
-              <Image
-                src={thumb.url}
-                alt=""
-                fill
-                sizes="64px"
-                className="object-contain bg-neutral-100"
-              />
+              <CroppedImage image={thumb} alt="" sizes="64px" layout="box" />
             </button>
           ))}
         </div>
