@@ -20,7 +20,7 @@ Rules:
 # Site operations (2026-09)
 
 ## Branding
-- Website name is **E-Life Trending** (formerly "Lam Life Shop"). Single source of truth in `lib/site.ts` (`siteConfig.name`); `app/layout.tsx` now derives the `<title>` from it.
+- Website name is **E-Life Shop** (formerly "E-Life Trending", originally "Lam Life Shop"). Single source of truth in `lib/site.ts` (`siteConfig.name`); `app/layout.tsx` now derives the `<title>` from it. The public domain is still `elife-trending.duckdns.org`.
 
 ## Production stack (all run from this Mac)
 - `next start` (production build) on port 3000, kept alive by launchd service `com.lamfamily.catalog`.
