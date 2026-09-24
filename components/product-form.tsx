@@ -3,7 +3,13 @@
 import Image from "next/image";
 import { useState } from "react";
 import { ImageEditor } from "@/components/image-editor";
-import { cropBoxStyle, cropFromRecord, cropSourceSizes } from "@/lib/crop";
+import {
+  containedCropBox,
+  cropBoxStyle,
+  cropFromRecord,
+  cropSourceSizes,
+  isSquareAspect,
+} from "@/lib/crop";
 import type { CropData, CroppableImage } from "@/lib/crop";
 import { useLanguage, useTranslation } from "@/lib/language-context";
 import { TagSelector } from "@/components/tag-selector";
@@ -35,7 +41,29 @@ type ProductFormProps = {
   productId?: string;
 };
 
-type PendingImage = { url: string; uploading: boolean; crop?: CropData };
+type PendingImage = {
+  url: string;
+  uploading: boolean;
+  crop?: CropData;
+  width?: number;
+  height?: number;
+};
+
+function readImageDims(file: File): Promise<{ width?: number; height?: number }> {
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const probe = document.createElement("img");
+    probe.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve({ width: probe.naturalWidth, height: probe.naturalHeight });
+    };
+    probe.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve({});
+    };
+    probe.src = objectUrl;
+  });
+}
 
 function FieldModeToggle({
   name,
@@ -185,6 +213,8 @@ export function ProductForm({
       url: img.url,
       uploading: false,
       crop: cropFromRecord(img) ?? undefined,
+      width: img.imageWidth ?? undefined,
+      height: img.imageHeight ?? undefined,
     })) ?? [],
   );
   const [uploading, setUploading] = useState(false);
@@ -218,11 +248,20 @@ export function ProductForm({
           throw new Error(data.error ?? "Upload failed.");
         }
         const data = (await res.json()) as { url: string };
-        return data.url;
+        const dims = await readImageDims(file);
+        return { url: data.url, ...dims };
       }),
     )
-      .then((urls) => {
-        setImages((prev) => [...prev, ...urls.map((url) => ({ url, uploading: false }))]);
+      .then((entries) => {
+        setImages((prev) => [
+          ...prev,
+          ...entries.map((entry) => ({
+            url: entry.url,
+            uploading: false,
+            width: entry.width,
+            height: entry.height,
+          })),
+        ]);
       })
       .catch((err: Error) => {
         setError(err.message);
@@ -392,7 +431,24 @@ export function ProductForm({
                 onClick={() => setEditorIndex(index)}
                 className="absolute inset-0 h-full w-full cursor-pointer"
               >
-                {image.crop ? (
+                {image.crop && !isSquareAspect(image.crop.aspect) ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div
+                      style={containedCropBox(image.crop.aspect)}
+                      className="relative overflow-hidden"
+                    >
+                      <div style={cropBoxStyle(image.crop)} className="absolute">
+                        <Image
+                          src={image.url}
+                          alt=""
+                          fill
+                          sizes={cropSourceSizes(image.crop, 38, 18)}
+                          className="object-cover"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : image.crop ? (
                   <div className="relative h-full w-full overflow-hidden">
                     <div style={cropBoxStyle(image.crop)} className="absolute">
                       <Image
@@ -410,7 +466,7 @@ export function ProductForm({
                     alt=""
                     fill
                     sizes="150px"
-                    className="object-cover"
+                    className="object-contain"
                   />
                 )}
               </button>
@@ -429,6 +485,9 @@ export function ProductForm({
               <input type="hidden" name="cropY" value={image.crop?.y ?? ""} />
               <input type="hidden" name="cropWidth" value={image.crop?.width ?? ""} />
               <input type="hidden" name="cropHeight" value={image.crop?.height ?? ""} />
+              <input type="hidden" name="cropAspect" value={image.crop?.aspect ?? ""} />
+              <input type="hidden" name="imageWidth" value={image.width ?? ""} />
+              <input type="hidden" name="imageHeight" value={image.height ?? ""} />
             </div>
           ))}
 

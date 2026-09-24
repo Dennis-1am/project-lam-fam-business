@@ -69,14 +69,28 @@ function sanitizeCrop(
   yRaw: string,
   wRaw: string,
   hRaw: string,
-): { cropX: number; cropY: number; cropWidth: number; cropHeight: number } | null {
+  aspectRaw: string,
+): {
+  cropX: number;
+  cropY: number;
+  cropWidth: number;
+  cropHeight: number;
+  cropAspect: number | null;
+} | null {
   const x = parseFloat(xRaw);
   const y = parseFloat(yRaw);
   const w = parseFloat(wRaw);
   const h = parseFloat(hRaw);
   if (![x, y, w, h].every(Number.isFinite)) return null;
   if (w <= 0 || h <= 0 || x < 0 || y < 0) return null;
-  return { cropX: x, cropY: y, cropWidth: w, cropHeight: h };
+  const a = parseFloat(aspectRaw);
+  const cropAspect = Number.isFinite(a) && a >= 0.1 && a <= 10 ? a : null;
+  return { cropX: x, cropY: y, cropWidth: w, cropHeight: h, cropAspect };
+}
+
+function parseDimension(raw: string): number | null {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 && n <= 20000 ? Math.round(n) : null;
 }
 
 function parseImageEntries(formData: FormData) {
@@ -85,11 +99,17 @@ function parseImageEntries(formData: FormData) {
   const cropY = formData.getAll("cropY").map((v) => String(v));
   const cropW = formData.getAll("cropWidth").map((v) => String(v));
   const cropH = formData.getAll("cropHeight").map((v) => String(v));
+  const cropAspect = formData.getAll("cropAspect").map((v) => String(v));
+  const imageWidth = formData.getAll("imageWidth").map((v) => String(v));
+  const imageHeight = formData.getAll("imageHeight").map((v) => String(v));
 
   return urls
     .map((url, i) => ({
       url,
-      ...(sanitizeCrop(cropX[i] ?? "", cropY[i] ?? "", cropW[i] ?? "", cropH[i] ?? "") ?? {}),
+      ...(sanitizeCrop(cropX[i] ?? "", cropY[i] ?? "", cropW[i] ?? "", cropH[i] ?? "", cropAspect[i] ?? "") ??
+        {}),
+      imageWidth: parseDimension(imageWidth[i] ?? ""),
+      imageHeight: parseDimension(imageHeight[i] ?? ""),
     }))
     .filter((img) => img.url !== "");
 }
@@ -257,6 +277,9 @@ export async function updateProduct(formData: FormData) {
           cropY: crop?.cropY ?? null,
           cropWidth: crop?.cropWidth ?? null,
           cropHeight: crop?.cropHeight ?? null,
+          cropAspect: crop?.cropAspect ?? null,
+          imageWidth: crop?.imageWidth ?? null,
+          imageHeight: crop?.imageHeight ?? null,
         },
       });
     }),
@@ -272,6 +295,9 @@ export async function updateProduct(formData: FormData) {
             cropY: img.cropY ?? null,
             cropWidth: img.cropWidth ?? null,
             cropHeight: img.cropHeight ?? null,
+            cropAspect: img.cropAspect ?? null,
+            imageWidth: img.imageWidth ?? null,
+            imageHeight: img.imageHeight ?? null,
           },
         }),
       ),

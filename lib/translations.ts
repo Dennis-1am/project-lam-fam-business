@@ -42,6 +42,7 @@ export const translations: Record<Language, Record<string, string>> = {
     cancel: "Cancel",
     apply: "Apply",
     zoom: "Zoom",
+    fitImage: "Fit image",
     tag: "Tag",
     addNewTag: "Add new tag",
     selectTag: "Select a tag",
@@ -57,6 +58,7 @@ export const translations: Record<Language, Record<string, string>> = {
     noImage: "No image",
     productImage: "Product image",
     jumpToImage: "Jump to image",
+    close: "Close",
     backToCatalog: "Catalog",
     productTranslations: "Product translations",
     translationsHint:
@@ -110,6 +112,7 @@ export const translations: Record<Language, Record<string, string>> = {
     cancel: "Cancelar",
     apply: "Aplicar",
     zoom: "Zoom",
+    fitImage: "Ajustar imagen",
     tag: "Etiqueta",
     addNewTag: "Añadir nueva etiqueta",
     selectTag: "Seleccionar una etiqueta",
@@ -125,6 +128,7 @@ export const translations: Record<Language, Record<string, string>> = {
     noImage: "Sin imagen",
     productImage: "Imagen del producto",
     jumpToImage: "Ir a la imagen",
+    close: "Cerrar",
     backToCatalog: "Catálogo",
     productTranslations: "Traducciones del producto",
     translationsHint:
@@ -177,6 +181,7 @@ export const translations: Record<Language, Record<string, string>> = {
     cancel: "取消",
     apply: "应用",
     zoom: "缩放",
+    fitImage: "适应图片",
     tag: "标签",
     addNewTag: "添加新标签",
     selectTag: "选择标签",
@@ -191,6 +196,7 @@ export const translations: Record<Language, Record<string, string>> = {
     noImage: "无图片",
     productImage: "产品图片",
     jumpToImage: "跳转到图片",
+    close: "关闭",
     backToCatalog: "目录",
     productTranslations: "产品翻译",
     translationsHint:

@@ -33,13 +33,16 @@ model Tag {
 }
 
 model Image {
-  id         String   @id @default(cuid())
-  url        String
-  cropX      Float?
-  cropY      Float?
-  cropWidth  Float?
-  cropHeight Float?
-  position   Int      @default(0)
+  id          String   @id @default(cuid())
+  url         String
+  cropX       Float?
+  cropY       Float?
+  cropWidth   Float?
+  cropHeight  Float?
+  cropAspect  Float?
+  imageWidth  Int?
+  imageHeight Int?
+  position    Int      @default(0)
   productId  String
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())

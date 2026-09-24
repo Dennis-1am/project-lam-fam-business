@@ -1,6 +1,7 @@
 "use client";
 
-import Cropper from "react-easy-crop";
+import ReactCrop, { type PercentCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 import { useCallback, useState } from "react";
 import type { CropData } from "@/lib/crop";
 import { useTranslation } from "@/lib/language-context";
@@ -12,18 +13,62 @@ type ImageEditorProps = {
   onCancel: () => void;
 };
 
+const FULL_IMAGE: PercentCrop = { x: 0, y: 0, width: 100, height: 100, unit: "%" };
+
+function centeredSquareCrop(imageWidth: number, imageHeight: number): PercentCrop {
+  if (imageWidth >= imageHeight) {
+    return {
+      unit: "%",
+      x: ((imageWidth - imageHeight) / 2 / imageWidth) * 100,
+      y: 0,
+      width: (imageHeight / imageWidth) * 100,
+      height: 100,
+    };
+  }
+  return {
+    unit: "%",
+    x: 0,
+    y: ((imageHeight - imageWidth) / 2 / imageHeight) * 100,
+    width: 100,
+    height: (imageWidth / imageHeight) * 100,
+  };
+}
+
 export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEditorProps) {
   const t = useTranslation();
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [lastArea, setLastArea] = useState<CropData | null>(null);
+  const initialCrop: PercentCrop | null = initial
+    ? { x: initial.x, y: initial.y, width: initial.width, height: initial.height, unit: "%" }
+    : null;
+  const [crop, setCrop] = useState<PercentCrop | null>(initialCrop);
+  const [lastCompleted, setLastCompleted] = useState<PercentCrop | null>(initialCrop);
+  const [natural, setNatural] = useState<{ width: number; height: number } | null>(null);
 
-  const handleCropComplete = useCallback((croppedArea: CropData) => {
-    setLastArea(croppedArea);
+  const handleImgLoad = useCallback((event: { currentTarget: HTMLImageElement }) => {
+    const img = event.currentTarget;
+    if (!(img.naturalWidth > 0 && img.naturalHeight > 0)) return;
+    setNatural({ width: img.naturalWidth, height: img.naturalHeight });
+    const square = centeredSquareCrop(img.naturalWidth, img.naturalHeight);
+    setCrop((prev) => prev ?? square);
+    setLastCompleted((prev) => prev ?? square);
   }, []);
 
+  const handleFitImage = () => {
+    setCrop(FULL_IMAGE);
+    setLastCompleted(FULL_IMAGE);
+  };
+
   const handleApply = () => {
-    if (lastArea) onApply(lastArea);
+    const completed = lastCompleted ?? crop;
+    if (!completed || !natural) return;
+    const rawAspect = (completed.width / 100) * natural.width / ((completed.height / 100) * natural.height);
+    const aspect = Math.min(10, Math.max(0.1, rawAspect));
+    onApply({
+      x: completed.x,
+      y: completed.y,
+      width: completed.width,
+      height: completed.height,
+      aspect,
+    });
   };
 
   return (
@@ -32,31 +77,38 @@ export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEdito
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative m-auto h-[62vh] w-full max-w-2xl px-4">
-        <Cropper
-          image={imageUrl}
-          crop={crop}
-          zoom={zoom}
-          aspect={1}
-          initialCroppedAreaPercentages={initial ?? undefined}
-          onCropChange={setCrop}
-          onZoomChange={setZoom}
-          onCropComplete={handleCropComplete}
-        />
+      <div className="mx-auto mb-6 flex h-[60vh] w-full max-w-2xl items-center justify-center px-4">
+        <ReactCrop
+          crop={crop ?? undefined}
+          onChange={(_, percentCrop) => setCrop(percentCrop)}
+          onComplete={(_, percentCrop) => setLastCompleted(percentCrop)}
+          keepSelection
+          ruleOfThirds
+          minWidth={40}
+          minHeight={40}
+          className="max-w-full"
+          style={{ maxHeight: "50vh" }}
+        >
+          {/* The cropper requires a raw <img> element; next/image can't drive it. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt=""
+            onLoad={handleImgLoad}
+            className="block max-h-full max-w-full rounded-lg"
+          />
+        </ReactCrop>
       </div>
       <div className="mx-auto w-full max-w-2xl px-4 pb-8">
-        <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-400">
-          {t("zoom")}
-        </label>
-        <input
-          type="range"
-          min={1}
-          max={3}
-          step={0.01}
-          value={zoom}
-          onChange={(e) => setZoom(Number(e.target.value))}
-          className="mb-6 w-full accent-neutral-100"
-        />
+        <div className="mb-6 flex gap-3">
+          <button
+            type="button"
+            onClick={handleFitImage}
+            className="flex-1 rounded-full border border-neutral-500 px-4 py-2 text-sm font-medium text-neutral-200 transition-colors hover:bg-neutral-800"
+          >
+            {t("fitImage")}
+          </button>
+        </div>
         <div className="flex gap-3">
           <button
             type="button"
@@ -68,7 +120,7 @@ export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEdito
           <button
             type="button"
             onClick={handleApply}
-            disabled={!lastArea}
+            disabled={!lastCompleted || !natural}
             className="flex-1 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t("apply")}

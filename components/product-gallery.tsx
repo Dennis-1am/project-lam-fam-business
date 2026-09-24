@@ -1,54 +1,38 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-import { cropBoxStyle, cropFromRecord, cropSourceSizes } from "@/lib/crop";
-import type { CroppableImage } from "@/lib/crop";
+import { useState } from "react";
+import { ImageCarousel } from "@/components/image-carousel";
+import type { GalleryImage } from "@/components/image-carousel";
 import { useTranslation } from "@/lib/language-context";
+import { useScrollCarousel } from "@/lib/use-scroll-carousel";
 
-type GalleryImage = CroppableImage & { id: string };
+export type { GalleryImage };
+
+function ExpandIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+      aria-hidden
+    >
+      <polyline points="15 3 21 3 21 9" />
+      <polyline points="9 21 3 21 3 15" />
+      <line x1="21" y1="3" x2="14" y2="10" />
+      <line x1="3" y1="21" x2="10" y2="14" />
+    </svg>
+  );
+}
 
 export function ProductGallery({ images }: { images: GalleryImage[] }) {
   const t = useTranslation();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || images.length <= 1) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActive(Number(entry.target.getAttribute("data-index")));
-          }
-        }
-      },
-      { root: container, threshold: 0.6 },
-    );
-
-    container
-      .querySelectorAll<HTMLElement>("[data-index]")
-      .forEach((slide) => observer.observe(slide));
-
-    return () => observer.disconnect();
-  }, [images.length]);
-
-  function jumpTo(index: number) {
-    const container = containerRef.current;
-    const slide = container?.querySelector<HTMLElement>(
-      `[data-index="${index}"]`,
-    );
-    if (!container || !slide) return;
-    const containerRect = container.getBoundingClientRect();
-    const slideRect = slide.getBoundingClientRect();
-    container.scrollTo({
-      top: container.scrollTop + (slideRect.top - containerRect.top),
-      left: container.scrollLeft + (slideRect.left - containerRect.left),
-      behavior: "smooth",
-    });
-  }
+  const [carouselOpen, setCarouselOpen] = useState(false);
+  const { containerRef, active, scrollTo } = useScrollCarousel(images.length);
 
   if (images.length === 0) {
     return (
@@ -62,85 +46,68 @@ export function ProductGallery({ images }: { images: GalleryImage[] }) {
     <div className="min-w-0">
       <div
         ref={containerRef}
-        className="flex snap-x snap-mandatory flex-row gap-4 overflow-x-auto overflow-y-hidden sm:h-[80vh] sm:flex-col sm:overflow-y-auto sm:overflow-x-hidden rounded-xl"
+        role="group"
+        aria-roledescription="carousel"
+        aria-label={t("productImage")}
+        className="relative flex aspect-square w-full cursor-zoom-in overflow-x-auto overflow-y-hidden rounded-xl border border-neutral-200 bg-neutral-100 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {images.map((image, index) => {
-          const crop = cropFromRecord(image);
-          return (
-            <div
-              key={image.id}
-              data-index={index}
-              className="relative aspect-square w-full shrink-0 snap-start"
-            >
-              {crop ? (
-                <div className="relative h-full w-full overflow-hidden">
-                  <div style={cropBoxStyle(crop)} className="absolute">
-                    <Image
-                      src={image.url}
-                      alt={`${t("productImage")} ${index + 1}`}
-                      fill
-                      priority={index === 0}
-                      sizes={cropSourceSizes(crop, 100, 50)}
-                      className="object-cover"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <Image
-                  src={image.url}
-                  alt={`${t("productImage")} ${index + 1}`}
-                  fill
-                  priority={index === 0}
-                  sizes="(min-width: 768px) 50vw, 100vw"
-                  className="object-cover"
-                />
-              )}
-            </div>
-          );
-        })}
+        {images.map((image, index) => (
+          <button
+            key={image.id}
+            type="button"
+            onClick={() => setCarouselOpen(true)}
+            aria-label={`${t("productImage")} ${index + 1}`}
+            className="relative h-full w-full shrink-0 snap-start"
+          >
+            <Image
+              src={image.url}
+              alt={`${t("productImage")} ${index + 1}`}
+              fill
+              priority={index === 0}
+              sizes="(min-width: 768px) 50vw, 100vw"
+              className="object-contain"
+            />
+          </button>
+        ))}
+
+        <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-white/80 p-2 text-neutral-700 shadow-sm">
+          <ExpandIcon />
+        </span>
       </div>
 
       {images.length > 1 && (
         <div className="mt-3 flex gap-3 overflow-x-auto pb-1 pr-4">
-          {images.map((image, index) => {
-            const crop = cropFromRecord(image);
-            return (
-              <button
-                key={image.id}
-                type="button"
-                onClick={() => jumpTo(index)}
-                aria-label={`${t("jumpToImage")} ${index + 1}`}
-                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border transition ${
-                  index === active
-                    ? "border-neutral-900"
-                    : "border-neutral-200 opacity-70 hover:opacity-100"
-                }`}
-              >
-                {crop ? (
-                  <div className="relative h-full w-full overflow-hidden">
-                    <div style={cropBoxStyle(crop)} className="absolute">
-                      <Image
-                        src={image.url}
-                        alt=""
-                        fill
-                        sizes={cropSourceSizes(crop, 16, 16)}
-                        className="object-cover"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <Image
-                    src={image.url}
-                    alt=""
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                )}
-              </button>
-            );
-          })}
+          {images.map((thumb, index) => (
+            <button
+              key={thumb.id}
+              type="button"
+              onClick={() => scrollTo(index)}
+              aria-label={t("jumpToImage")}
+              aria-current={index === active}
+              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border transition ${
+                index === active
+                  ? "border-neutral-900"
+                  : "border-neutral-200 opacity-70 hover:opacity-100"
+              }`}
+            >
+              <Image
+                src={thumb.url}
+                alt=""
+                fill
+                sizes="64px"
+                className="object-contain bg-neutral-100"
+              />
+            </button>
+          ))}
         </div>
+      )}
+
+      {carouselOpen && (
+        <ImageCarousel
+          images={images}
+          startIndex={active}
+          onClose={() => setCarouselOpen(false)}
+        />
       )}
     </div>
   );
