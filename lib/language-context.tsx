@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useCallback, useContext, useSyncExternalStore } from "react";
+import { createContext, useCallback, useContext, useEffect, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import type { Language } from "./translations";
 import { translations } from "./translations";
@@ -29,6 +30,10 @@ function getCookieLanguage(): StoredValue {
   );
 }
 
+function setLanguageCookie(lang: Language) {
+  document.cookie = `${COOKIE_NAME}=${lang};path=/;max-age=${COOKIE_MAX_AGE};samesite=Lax`;
+}
+
 const listeners = new Set<() => void>();
 
 function subscribe(callback: () => void): () => void {
@@ -54,17 +59,28 @@ function notify() {
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const language = useSyncExternalStore(
     subscribe,
     getStoredLanguage,
     () => "en" as const,
   );
 
+  useEffect(() => {
+    const stored = validLanguage(window.localStorage.getItem(STORAGE_KEY));
+    if (!stored) return;
+    if (getCookieLanguage() !== stored) {
+      setLanguageCookie(stored);
+      router.refresh();
+    }
+  }, [router]);
+
   const setLanguage = useCallback((lang: Language) => {
     window.localStorage.setItem(STORAGE_KEY, lang);
-    document.cookie = `${COOKIE_NAME}=${lang};path=/;max-age=${COOKIE_MAX_AGE};samesite=Lax`;
+    setLanguageCookie(lang);
     notify();
-  }, []);
+    router.refresh();
+  }, [router]);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage }}>
