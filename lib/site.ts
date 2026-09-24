@@ -1,5 +1,5 @@
 export const siteConfig = {
-  name: "E-Life Trending",
+  name: "E-Life Shop",
   tagline: "Established Since: 2010",
   currency: "$",
 };
