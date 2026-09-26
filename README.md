@@ -4,6 +4,8 @@ A product showcase website with an Instagram-style catalog feed. Owners log in t
 
 Built with Next.js 16 (App Router), Prisma + SQLite, and a lightweight custom session auth.
 
+[![Watch a one-minute video tour of project-lam-fam-business](https://gitdiagram.com/video-badge.svg)](https://gitdiagram.com/dennis-1am/project-lam-fam-business/video)
+
 ## Getting started
 
 ```bash
