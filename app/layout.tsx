@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -22,6 +22,16 @@ export const metadata: Metadata = {
     template: `%s · ${siteConfig.name}`,
   },
   description: "Established Since: 2010",
+  applicationName: siteConfig.name,
+  appleWebApp: {
+    capable: true,
+    title: siteConfig.name,
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f2ebd1",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
