@@ -9,13 +9,38 @@ import { useTranslation } from "@/lib/language-context";
 type ImageEditorProps = {
   imageUrl: string;
   initial?: CropData | null;
+  /**
+   * Displayed width/height ratio to pre-select when there is no saved crop yet.
+   * A wide value (like the banner's 3:1) starts the frame at the right shape so
+   * the admin only has to nudge it, instead of starting from the whole photo.
+   */
+  defaultAspect?: number | null;
   onApply: (crop: CropData) => void;
   onCancel: () => void;
 };
 
 const FULL_IMAGE: PercentCrop = { x: 0, y: 0, width: 100, height: 100, unit: "%" };
 
-export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEditorProps) {
+/** Largest centered rectangle of `aspect` (width/height) that fits the photo. */
+function centeredCrop(naturalWidth: number, naturalHeight: number, aspect: number): PercentCrop {
+  const naturalAspect = naturalWidth / naturalHeight;
+  let width = 100;
+  let height = 100;
+  if (aspect >= naturalAspect) {
+    height = (naturalAspect / aspect) * 100;
+  } else {
+    width = (aspect / naturalAspect) * 100;
+  }
+  return {
+    x: (100 - width) / 2,
+    y: (100 - height) / 2,
+    width,
+    height,
+    unit: "%",
+  };
+}
+
+export function ImageEditor({ imageUrl, initial, defaultAspect, onApply, onCancel }: ImageEditorProps) {
   const t = useTranslation();
   const initialCrop: PercentCrop | null = initial
     ? { x: initial.x, y: initial.y, width: initial.width, height: initial.height, unit: "%" }
@@ -24,13 +49,20 @@ export function ImageEditor({ imageUrl, initial, onApply, onCancel }: ImageEdito
   const [lastCompleted, setLastCompleted] = useState<PercentCrop | null>(initialCrop);
   const [natural, setNatural] = useState<{ width: number; height: number } | null>(null);
 
-  const handleImgLoad = useCallback((event: { currentTarget: HTMLImageElement }) => {
-    const img = event.currentTarget;
-    if (!(img.naturalWidth > 0 && img.naturalHeight > 0)) return;
-    setNatural({ width: img.naturalWidth, height: img.naturalHeight });
-    setCrop((prev) => prev ?? FULL_IMAGE);
-    setLastCompleted((prev) => prev ?? FULL_IMAGE);
-  }, []);
+  const handleImgLoad = useCallback(
+    (event: { currentTarget: HTMLImageElement }) => {
+      const img = event.currentTarget;
+      if (!(img.naturalWidth > 0 && img.naturalHeight > 0)) return;
+      setNatural({ width: img.naturalWidth, height: img.naturalHeight });
+      const startCrop =
+        defaultAspect && defaultAspect > 0
+          ? centeredCrop(img.naturalWidth, img.naturalHeight, defaultAspect)
+          : FULL_IMAGE;
+      setCrop((prev) => prev ?? startCrop);
+      setLastCompleted((prev) => prev ?? startCrop);
+    },
+    [defaultAspect],
+  );
 
   const handleFitImage = () => {
     setCrop(FULL_IMAGE);

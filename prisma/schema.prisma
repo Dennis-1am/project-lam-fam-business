@@ -71,3 +71,36 @@ model TranslationQuota {
   usedChars Int      @default(0)
   updatedAt DateTime @updatedAt
 }
+
+// Singleton row (id is always 1) holding the admin-editable homepage banner.
+// The crop columns intentionally mirror `Image`: the original upload is kept
+// untouched and the crop is applied at render time, so the admin can re-crop
+// later without re-uploading. That also makes this row usable as-is wherever a
+// `CroppableImage` is expected.
+model SiteBanner {
+  id             Int                   @id @default(1)
+  imageUrl       String?
+  cropX          Float?
+  cropY          Float?
+  cropWidth      Float?
+  cropHeight     Float?
+  cropAspect     Float?
+  imageWidth     Int?
+  imageHeight    Int?
+  sourceLanguage String                @default("en")
+  translations   SiteBannerTranslation[]
+  updatedAt      DateTime              @updatedAt
+}
+
+model SiteBannerTranslation {
+  id         String     @id @default(cuid())
+  bannerId   Int
+  banner     SiteBanner  @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+  language   String
+  text       String     @default("")
+  textManual Boolean    @default(false)
+  updatedAt  DateTime   @updatedAt
+
+  @@unique([bannerId, language])
+  @@index([bannerId])
+}

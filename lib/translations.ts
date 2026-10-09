@@ -68,6 +68,19 @@ export const translations: Record<Language, Record<string, string>> = {
     edited: "Edited",
     quotaNotice:
       "Not translated — Google's free daily quota (16,000 characters) is exhausted, and translating further today will incur costs. Re-save this product tomorrow to generate it. You can also fill it in manually below.",
+    editBanner: "Edit banner",
+    closeBannerEditor: "Done editing",
+    bannerImage: "Background image",
+    bannerChooseImage: "Choose an image",
+    bannerReplaceImage: "Replace",
+    bannerRemoveImage: "Remove",
+    bannerCropImage: "Crop",
+    bannerNoImage: "No image yet — the banner shows as plain text.",
+    bannerImageOnly: "Banner image",
+    bannerText: "Banner text",
+    bannerSource: "Source",
+    bannerTranslationsHint:
+      "Type in any language. Each has a toggle: “Manual” keeps your text untouched by auto-translation, “Auto” regenerates it from the source language when the source text changes. Typing into a field switches it to Manual.",
   },
   es: {
     catalog: "Catálogo",
@@ -137,6 +150,19 @@ export const translations: Record<Language, Record<string, string>> = {
     edited: "Editado",
     quotaNotice:
       "Sin traducir: se ha agotado la cuota gratuita diaria de Google (16 000 caracteres) y traducir hoy supondrá costes. Vuelve a guardar este producto mañana para generarla. También puedes rellenarla manualmente a continuación.",
+    editBanner: "Editar el banner",
+    closeBannerEditor: "Terminar la edición",
+    bannerImage: "Imagen de fondo",
+    bannerChooseImage: "Elegir una imagen",
+    bannerReplaceImage: "Cambiar",
+    bannerRemoveImage: "Quitar",
+    bannerCropImage: "Recortar",
+    bannerNoImage: "Todavía no hay imagen: el banner se muestra como texto simple.",
+    bannerImageOnly: "Imagen del banner",
+    bannerText: "Texto del banner",
+    bannerSource: "Origen",
+    bannerTranslationsHint:
+      "Escribe en cualquier idioma. Cada uno tiene un interruptor: «Manual» deja tu texto sin cambios por la traducción automática, «Automática» lo regenera desde el idioma de origen cuando el texto de origen cambia. Si escribes en un campo, pasa a Manual.",
   },
   zh: {
     catalog: "目录",
@@ -204,6 +230,19 @@ export const translations: Record<Language, Record<string, string>> = {
     edited: "已编辑",
     quotaNotice:
       "未翻译：Google 每日免费额度（16,000 字符）已用完，今日继续翻译将产生费用。请明天重新保存此产品以生成翻译，也可以手动填写。",
+    editBanner: "编辑横幅",
+    closeBannerEditor: "完成编辑",
+    bannerImage: "背景图片",
+    bannerChooseImage: "选择图片",
+    bannerReplaceImage: "更换",
+    bannerRemoveImage: "移除",
+    bannerCropImage: "裁剪",
+    bannerNoImage: "尚未上传图片 — 横幅以纯文字显示。",
+    bannerImageOnly: "横幅图片",
+    bannerText: "横幅文字",
+    bannerSource: "源语言",
+    bannerTranslationsHint:
+      "可用任意语言输入。每种语言都有一个开关：「手动」会保留你的文字、不被自动翻译覆盖，「自动」会在源语言文字变化时重新生成。在输入框中输入会切换为「手动」。",
   },
 };
 

@@ -15,6 +15,7 @@ import { useLanguage, useTranslation } from "@/lib/language-context";
 import { TagSelector } from "@/components/tag-selector";
 import { DeleteButton } from "@/components/delete-button";
 import { LANGUAGE_LABELS, targetLanguages } from "@/lib/languages";
+import { IMAGE_ACCEPT, readImageDims } from "@/lib/client-image";
 import type { Language } from "@/lib/translations";
 
 export type TranslationEntry = {
@@ -48,22 +49,6 @@ type PendingImage = {
   width?: number;
   height?: number;
 };
-
-function readImageDims(file: File): Promise<{ width?: number; height?: number }> {
-  return new Promise((resolve) => {
-    const objectUrl = URL.createObjectURL(file);
-    const probe = document.createElement("img");
-    probe.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      resolve({ width: probe.naturalWidth, height: probe.naturalHeight });
-    };
-    probe.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      resolve({});
-    };
-    probe.src = objectUrl;
-  });
-}
 
 function FieldModeToggle({
   name,
@@ -509,7 +494,7 @@ export function ProductForm({
             )}
             <input
               type="file"
-              accept="image/*"
+              accept={IMAGE_ACCEPT}
               multiple
               disabled={uploading}
               onChange={(e) => {

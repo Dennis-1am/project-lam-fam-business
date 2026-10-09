@@ -20,8 +20,8 @@ export type CroppableImage = {
   imageHeight?: number | null;
 };
 
-const MIN_ASPECT = 0.1;
-const MAX_ASPECT = 10;
+export const MIN_ASPECT = 0.1;
+export const MAX_ASPECT = 10;
 
 export function cropFromRecord(image: CroppableImage): CropData | null {
   const { cropX, cropY, cropWidth, cropHeight, cropAspect } = image;
@@ -64,6 +64,17 @@ export function containedCropBox(aspect: number): CSSProperties {
 export function cropSourceSizes(crop: CropData, mobileVw: number, desktopVw: number): string {
   const scale = 100 / crop.width;
   return `(min-width: 768px) ${Math.ceil(desktopVw * scale)}vw, ${Math.ceil(mobileVw * scale)}vw`;
+}
+
+/**
+ * Same calculation as `cropSourceSizes`, for containers measured in pixels. The
+ * product grid's columns are viewport-relative, so those callers work in `vw`,
+ * but the homepage banner sits inside a fixed `max-w-6xl` container and a `vw`
+ * width would badly over-fetch on wide screens.
+ */
+export function cropSourceSizesPx(crop: CropData, mobilePx: number, desktopPx: number): string {
+  const scale = 100 / crop.width;
+  return `(min-width: 768px) ${Math.ceil(desktopPx * scale)}px, ${Math.ceil(mobilePx * scale)}px`;
 }
 
 export function imageAspectOf(image: CroppableImage): number | null {

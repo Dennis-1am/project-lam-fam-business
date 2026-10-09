@@ -15,6 +15,13 @@ type CroppedImageProps = {
   className?: string;
   /** "fill" crops the image into the space (default); "box" places it in an aspect-sized box, centered. */
   layout?: "fill" | "box";
+  /**
+   * How an uncropped image fills a "fill" container. "contain" (the default)
+   * shows the whole photo with empty space around it, which is what the product
+   * grid wants. "cover" fills the box and lets the overflow fall outside it,
+   * which is what a fixed-height band like the homepage banner wants.
+   */
+  fit?: "contain" | "cover";
 };
 
 function useNaturalAspect(url: string): number | null {
@@ -92,6 +99,7 @@ export function CroppedImage({
   priority,
   className,
   layout = "fill",
+  fit = "contain",
 }: CroppedImageProps) {
   const crop = cropFromRecord(image);
   const naturalAspect = useNaturalAspect(image.url);
@@ -153,7 +161,7 @@ export function CroppedImage({
       fill
       sizes={sizes}
       priority={priority}
-      className={`object-contain ${className ?? ""}`}
+      className={`${fit === "cover" ? "object-cover" : "object-contain"} ${className ?? ""}`}
     />
   );
 }

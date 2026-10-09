@@ -9,7 +9,9 @@ import { TagFilter } from "@/components/tag-filter";
 import { getSession } from "@/lib/auth";
 import { CatalogLocationMemory } from "@/components/catalog-location-memory";
 import { CatalogHealthMessage, EmptyCatalogMessage, NoFilterResultsMessage } from "@/components/no-products-message";
+import { HeroBanner } from "@/components/hero-banner";
 import { assembleProduct } from "@/lib/product-i18n";
+import { getSiteBanner } from "@/lib/site-banner";
 
 export const metadata = {
   title: "Catalog",
@@ -147,6 +149,7 @@ export default async function CatalogPage({
   const hiddenCount = isAdmin
     ? await db.product.count({ where: { hidden: true } })
     : 0;
+  const banner = await getSiteBanner();
 
   function hrefFor(pageNum: number) {
     const search = new URLSearchParams();
@@ -163,19 +166,7 @@ export default async function CatalogPage({
       <Suspense fallback={null}>
         <CatalogLocationMemory />
       </Suspense>
-      <section className="pb-10 pt-6">
-        <p className="text-sm font-medium uppercase tracking-widest text-neutral-400">
-          Wholesale since 2008
-        </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight">
-          Welcome to our shop
-        </h1>
-        {total > 0 && (
-          <p className="mt-2 text-neutral-500">
-            {total} {total === 1 ? "product" : "products"}
-          </p>
-        )}
-      </section>
+      <HeroBanner banner={banner} total={total} isAdmin={isAdmin} />
 
       <TagFilter
         activeTag={tagId ? activeTag : null}

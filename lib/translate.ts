@@ -249,3 +249,66 @@ export async function autoTranslateChangedFields(params: {
     }
   }
 }
+
+/**
+ * Banner counterpart to `autoTranslateChangedFields`. The banner carries a
+ * single `text` field per language instead of a title/description pair, but the
+ * rules are identical: only re-translate when the source actually changed (or a
+ * translation is missing and `fillMissing` is set), and never touch a language
+ * the admin has marked manual. It shares `translateText` and its quota ledger
+ * with the product path, so both draw down the same daily budget.
+ */
+export async function autoTranslateSiteBannerText(params: {
+  bannerId: number;
+  source: Language;
+  text: string;
+  changed: boolean;
+  fillMissing?: boolean;
+  modes?: Record<string, "auto" | "manual">;
+}): Promise<void> {
+  for (const language of targetLanguages(params.source)) {
+    const existing = await db.siteBannerTranslation.findUnique({
+      where: {
+        bannerId_language: { bannerId: params.bannerId, language },
+      },
+    });
+
+    const mode = params.modes?.[language];
+    const manual =
+      mode === "manual"
+        ? true
+        : mode === "auto"
+          ? false
+          : (existing?.textManual ?? false);
+    const exists = existing !== null && existing.text !== "";
+    const shouldTranslate =
+      params.changed || (params.fillMissing === true && !exists);
+
+    if (!shouldTranslate || manual) continue;
+
+    try {
+      const translated = await translateText(params.text, params.source, language);
+      if (translated === null) continue;
+
+      if (existing) {
+        await db.siteBannerTranslation.update({
+          where: { id: existing.id },
+          data: { text: translated, textManual: false },
+        });
+      } else {
+        await db.siteBannerTranslation.create({
+          data: {
+            bannerId: params.bannerId,
+            language,
+            text: translated,
+            textManual: false,
+          },
+        });
+      }
+    } catch (error) {
+      if (!(error instanceof QuotaExceededError)) {
+        console.error("Site banner translation failed:", error);
+      }
+    }
+  }
+}

@@ -1,17 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { UPLOADS_DIR } from "@/lib/storage";
-
-const NAME_PATTERN = /^\d+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|gif|avif|svg)$/;
-
-const CONTENT_TYPES: Record<string, string> = {
-  jpg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-  gif: "image/gif",
-  avif: "image/avif",
-  svg: "image/svg+xml",
-};
+import { contentTypeForFilename, NAME_PATTERN, UPLOADS_DIR } from "@/lib/storage";
 
 export async function GET(
   _request: Request,
@@ -25,10 +14,9 @@ export async function GET(
 
   try {
     const buffer = await readFile(path.join(UPLOADS_DIR, name));
-    const ext = name.split(".").pop() ?? "";
     return new Response(buffer, {
       headers: {
-        "Content-Type": CONTENT_TYPES[ext] ?? "application/octet-stream",
+        "Content-Type": contentTypeForFilename(name) ?? "application/octet-stream",
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
